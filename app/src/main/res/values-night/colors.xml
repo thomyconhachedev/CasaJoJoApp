@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Override nocturno de window_background. Android elige esta variante
+     automaticamente cuando el sistema esta en modo oscuro, sin necesidad de
+     un themes.xml aparte. Debe coincidir con JoJoNegro de Color.kt. -->
+<resources>
+    <color name="window_background">#1A1A1A</color>
+</resources>
