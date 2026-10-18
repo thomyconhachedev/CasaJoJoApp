@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 data class Proteina(
     val id: String,
     val nombre: String,
@@ -20,6 +21,7 @@ data class Proteina(
     val emoji: String,
     val estaDisponible: Boolean = true
 )
+
 // Colores del patrón La Casa JoJo
 val DarkBackground = Color(0xFF1E1E1E)
 val PrimaryOrange = Color(0xFFFF6B2B)

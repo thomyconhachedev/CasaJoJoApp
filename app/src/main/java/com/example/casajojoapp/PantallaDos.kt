@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -36,7 +38,12 @@ import java.util.Locale
 
 @Composable
 fun PantallaDos(navController: NavController) {
-    Column(modifier = Modifier.padding(8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(8.dp)
+    ) {
 
         HeaderPrincipal(navController)
 
@@ -99,7 +106,8 @@ fun TarjetaPromocion() {
                 modifier = Modifier.padding(bottom = 24.dp, start = 10.dp)
             )
             Text(
-                text = "Combo completo - $6.500",
+                // CAMBIO PRECIOS: el plato cuesta $4.800 (antes "Combo completo - $6.500")
+                text = "Plato completo - $4.800",
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,

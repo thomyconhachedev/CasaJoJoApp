@@ -1,4 +1,4 @@
-package com.example.casajojoapp.pedido.cliente.armado
+package com.example.casajojoapp.ui.cliente.armado
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -19,10 +19,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -43,8 +41,9 @@ data class Ensalada(
 )
 
 // 1. PANTALLA PRINCIPAL
+// CAMBIO MVVM (sección 3): firma ampliada con viewModel: OrderViewModel.
 @Composable
-fun SeleccionEnsaladaSC(navController: NavController) {
+fun SeleccionEnsaladaSC(navController: NavController, viewModel: OrderViewModel) {
     val listaEnsaladas = listOf(
         Ensalada("1", "Ensalada Chilena", "Tomate fresco, cebolla pluma y cilantro", "🥗"),
         Ensalada("2", "Ensalada Mixta", "Lechuga, tomate y choclo", "🥬"),
@@ -52,8 +51,11 @@ fun SeleccionEnsaladaSC(navController: NavController) {
         Ensalada("0", "Sin Ensalada", "Prefiero no agregar ensalada a mi pedido", "🚫")
     )
 
-    // Por defecto seleccionamos la primera opción (Ensalada Chilena)
-    var selectedId by remember { mutableStateOf("1") }
+    // CAMBIO MVVM: se REEMPLAZÓ el "var selectedId by remember { mutableStateOf("1") }"
+    // por estado compartido derivado del OrderViewModel. null equivale a no tener
+    // ensalada en el plato (que es exactamente lo que significa "Sin Ensalada").
+    val uiState by viewModel.uiState.collectAsState()
+    val selectedId: String? = uiState.platoEnArmadoActual.ensalada?.id?.toString()
 
     Column(
         modifier = Modifier
@@ -71,15 +73,26 @@ fun SeleccionEnsaladaSC(navController: NavController) {
         ListaEnsaladas(
             lista = listaEnsaladas,
             selectedId = selectedId,
-            onEnsaladaSeleccionada = { selectedId = it },
+            onEnsaladaSeleccionada = { id ->
+                if (id == "0") {
+                    // "Sin Ensalada" se guarda como null en el estado global
+                    viewModel.seleccionarEnsalada(null)
+                } else {
+                    // CAMBIO MVVM: persiste la ensalada elegida en el estado global
+                    listaEnsaladas.firstOrNull { it.id == id }
+                        ?.let { viewModel.seleccionarEnsalada(it.toProducto()) }
+                }
+            },
             modifier = Modifier.weight(1f)
         )
 
         BotonContinuarEnsalada(
-            sinEnsalada = (selectedId == "0"),
+            // selectedId null == plato sin ensalada == opción "Sin Ensalada"
+            sinEnsalada = (selectedId == null),
             onClick = {
-                // Paso 4: Navegar a Bebidas/Postres o Resumen del Pedido
-                navController.navigate("resumen_plato")
+                // CAMBIO FLUJO: el paso 4 ahora es Postres y Bebidas (opcional);
+                // el Resumen queda como paso 5 final.
+                navController.navigate("postresBebidasSC")
             }
         )
     }
@@ -106,17 +119,17 @@ fun EncabezadoEnsaladas() {
     }
 }
 
-// 3. BARRA DE PROGRESO (Paso 3 de 4)
+// 3. BARRA DE PROGRESO (Paso 3 de 5)
 @Composable
 fun SeccionProgresoEnsaladas() {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StepProgressBar(totalSteps = 4, currentStep = 3)
+        StepProgressBar(totalSteps = 5, currentStep = 3)
 
         Text(
-            text = "Selecciona 1 opción de ensalada incluida en tu combo.",
+            text = "Selecciona 1 opción de ensalada incluida en tu plato.",
             color = Color(0xFFFFF4EC),
             fontSize = 14.sp
         )
@@ -127,7 +140,7 @@ fun SeccionProgresoEnsaladas() {
 @Composable
 fun ListaEnsaladas(
     lista: List<Ensalada>,
-    selectedId: String,
+    selectedId: String?, // CAMBIO MVVM: nullable porque deriva del OrderViewModel (null = sin ensalada)
     onEnsaladaSeleccionada: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -138,9 +151,15 @@ fun ListaEnsaladas(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         lista.forEach { ensalada ->
+            // CAMBIO MVVM: el id "0" ("Sin Ensalada") no existe en el estado global
+            // (se guarda como null), por eso esa opción se marca como seleccionada
+            // cuando el plato no tiene ensalada.
+            val seleccionada =
+                if (ensalada.id == "0") selectedId == null else ensalada.id == selectedId
+
             EnsaladaCard(
                 ensalada = ensalada,
-                isSelected = (ensalada.id == selectedId),
+                isSelected = seleccionada,
                 onSelect = { onEnsaladaSeleccionada(ensalada.id) }
             )
         }

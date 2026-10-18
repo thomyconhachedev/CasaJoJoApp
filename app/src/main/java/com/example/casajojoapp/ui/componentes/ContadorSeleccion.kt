@@ -29,9 +29,9 @@ fun BannerContadorSeleccion(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Texto Izquierda: "Elige 2 de 5"
+        // Texto Izquierda: "Elige hasta 2 de 6" (CAMBIO: mínimo 1, hasta el máximo)
         Text(
-            text = "Elige $maxSelecciones de $totalOpciones",
+            text = "Elige hasta $maxSelecciones de $totalOpciones",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold

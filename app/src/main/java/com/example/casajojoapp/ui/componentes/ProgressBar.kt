@@ -20,7 +20,7 @@ val TextOrange = Color(0xFFFF9E66)    // Texto del encabezado
 
 @Composable
 fun StepProgressBar(
-    totalSteps: Int = 4,
+    totalSteps: Int = 5, // CAMBIO FLUJO: el armado ahora tiene 5 pasos
     currentStep: Int = 1,
     title: String = "ARMA TU ALMUERZO",
     barHeight: Dp = 6.dp,

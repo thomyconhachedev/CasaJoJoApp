@@ -15,14 +15,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.casajojoapp.pedido.cliente.armado.ResumenPlatoScreen
-import com.example.casajojoapp.pedido.cliente.armado.SeleccionAgregadosSC
-import com.example.casajojoapp.pedido.cliente.armado.SeleccionEnsaladaSC
-import com.example.casajojoapp.pedido.cliente.armado.SeleccionProteinaSC
+import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
+import com.example.casajojoapp.ui.cliente.armado.ResumenPlatoScreen
+import com.example.casajojoapp.ui.cliente.armado.SeleccionAcompanamientosSC
+import com.example.casajojoapp.ui.cliente.armado.SeleccionEnsaladaSC
+import com.example.casajojoapp.ui.cliente.armado.SeleccionPostresBebidasSC
+import com.example.casajojoapp.ui.cliente.armado.SeleccionProteinaSC
+import com.example.casajojoapp.ui.cliente.carrito.SeleccionarHoraRetiroSC
+import com.example.casajojoapp.ui.cliente.carrito.carritoSC
 import com.example.casajojoapp.ui.theme.CasaJoJoAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -35,6 +40,7 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.auto(TRANSPARENT, TRANSPARENT),
         )
         setContent {
+            val orderViewModel: OrderViewModel = viewModel()
             CasaJoJoAppTheme {
                 val navController = rememberNavController()
 
@@ -53,17 +59,33 @@ class MainActivity : ComponentActivity() {
                         composable("pantalla_dos") {
                             PantallaDos(navController)
                         }
+                        // CAMBIO MVVM (sección 3): la MISMA instancia de OrderViewModel
+                        // creada arriba con viewModel() se inyecta en cada ruta del
+                        // flujo de armado para que compartan un único estado global.
+                        // CAMBIO FLUJO (5 pasos): Proteína -> Acompañamientos(2)
+                        // -> Ensalada -> Postres/Bebidas (opcionales) -> Resumen
                         composable("seleccionProteinaSC") {
-                            SeleccionProteinaSC(navController)
+                            SeleccionProteinaSC(navController, viewModel = orderViewModel)
                         }
-                        composable("seleccionAgregadosSC") {
-                            SeleccionAgregadosSC(navController)
+                        composable("seleccionAcompanamientosSC") {
+                            SeleccionAcompanamientosSC(navController, viewModel = orderViewModel)
                         }
                         composable("seleccionEnsaladasSC") {
-                            SeleccionEnsaladaSC(navController)
+                            SeleccionEnsaladaSC(navController, viewModel = orderViewModel)
+                        }
+                        composable("postresBebidasSC") {
+                            SeleccionPostresBebidasSC(navController, viewModel = orderViewModel)
                         }
                         composable("resumen_plato") {
-                            ResumenPlatoScreen(navController = navController)
+                            ResumenPlatoScreen(navController = navController, viewModel = orderViewModel)
+                        }
+                        // CAMBIO HORARIO: selector de hora de retiro (12:00–16:00
+                        // cada 10 min) entre el Resumen y el Carrito
+                        composable("horaRetiroSC") {
+                            SeleccionarHoraRetiroSC(navController = navController, viewModel = orderViewModel)
+                        }
+                        composable("carritoSC") {
+                            carritoSC(navController = navController, viewModel = orderViewModel)
                         }
                     }
                 }

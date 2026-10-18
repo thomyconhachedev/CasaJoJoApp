@@ -1,4 +1,4 @@
-package com.example.casajojoapp.pedido.cliente.armado
+package com.example.casajojoapp.ui.cliente.armado
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,9 +18,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,26 +33,54 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.componentes.StepProgressBar
 
-// Modelo para el resumen completo del pedido
-data class ResumenPedido(
-    val proteina: String = "Carne Mechada 🥩",
-    val acompanamientos: List<String> = listOf("Puré de Papas 🥔", "Arroz Casero 🍚"),
-    val ensalada: String = "Ensalada Chilena 🥗",
-    val extras: List<Pair<String, Int>> = listOf("Pebre Extra 🌶️" to 500),
-    val precioBaseCombo: Int = 6500
-)
+// =========================================================
+// CAMBIO MVVM (prompt sección 4.A):
+// - Se ELIMINÓ la data class "ResumenPedido" con valores hardcodeados
+//   (proteína/acompañamientos/extras ficticios que nunca cambiaban).
+// - La pantalla ahora recibe "viewModel: OrderViewModel", colecta su
+//   StateFlow con collectAsState() y muestra uiState.platoEnArmadoActual.
+// - El precio total se calcula en vivo con platoEnArmadoActual.precioTotal
+//   (getter de PlatoArmado) en vez de un total fijo.
+//
+// CAMBIO PRECIOS (paso 5 de 5):
+// - Sin precios individuales por ítem: proteína, acompañamientos y
+//   ensalada se listan solo con su nombre (incluidos en el plato de $4.800).
+// - Se muestra el desglose: Plato $4.800 + Extras (+$X) = Total.
+//
+// CAMBIO FLUJO (al terminar de armar el plato):
+// - Dos acciones en vez de un único botón:
+//   "Pedir otro plato"  -> guarda el plato actual en el carrito y
+//                          reinicia el armado desde el paso 1.
+//   "Ir al carrito"     -> guarda el plato actual y va al carrito.
+// - Ambas solo se habilitan con plato completo (1 proteína + al menos 1 acompañamiento).
+//
+// CAMBIO RESTRICCIONES:
+// - Las restricciones ahora son POR PLATO y se escriben AQUÍ, antes de
+//   terminar el plato (OutlinedTextField -> OrderViewModel.actualizarNotasPlato
+//   -> PlatoArmado.notas). El carrito ya no tiene un campo de notas global.
+//
+// CAMBIO HORARIO:
+// - "Ir al carrito" ahora pasa primero por SeleccionarHoraRetiroSC
+//   (slots cada 10 min entre 12:00 y 16:00) y termina en el carrito.
+// =========================================================
 
 // 1. PANTALLA PRINCIPAL
 @Composable
 fun ResumenPlatoScreen(
     navController: NavController,
-    pedido: ResumenPedido = ResumenPedido() // Puedes recibirlo desde el ViewModel o NavArgs
+    viewModel: OrderViewModel // CAMBIO MVVM: antes tenía un ResumenPedido default
 ) {
-    val totalExtras = pedido.extras.sumOf { it.second }
-    val precioTotal = pedido.precioBaseCombo + totalExtras
+    // CAMBIO MVVM: estado compartido colectado desde el OrderViewModel
+    val uiState by viewModel.uiState.collectAsState()
+    val plato = uiState.platoEnArmadoActual
+    val precioTotal = plato.precioTotal // CAMBIO MVVM: $4.800 + extras (dinámico)
+
+    // CAMBIO FLUJO: regla de negocio del plato (1 proteína + MÍNIMO 1 acompañamiento)
+    val platoListo = plato.proteina != null && plato.acompanamientos.isNotEmpty()
 
     Column(
         modifier = Modifier
@@ -64,18 +97,104 @@ fun ResumenPlatoScreen(
 
         // Tarjeta con el detalle completo del plato armado
         TarjetaDetallePedido(
-            pedido = pedido,
+            plato = plato,
             precioTotal = precioTotal,
             modifier = Modifier.weight(1f)
         )
 
-        BotonConfirmarPedido(
-            precioTotal = precioTotal,
-            onClick = {
-                // Navegar a la pantalla de confirmación o enviar a la API
-                navController.navigate("carritoSC")
-            }
+        if (!platoListo) {
+            // Aviso en vez de botones muertos: indica qué falta para confirmar
+            Text(
+                text = "Faltan datos: elige 1 proteína y al menos 1 acompañamiento.",
+                color = Color(0xFFFFAA75),
+                fontSize = 13.sp
+            )
+        }
+
+        // CAMBIO RESTRICCIONES: antes de terminar el plato se escriben sus
+        // restricciones; se guardan en PlatoArmado.notas (por plato, no globales)
+        OutlinedTextField(
+            value = plato.notas,
+            onValueChange = { viewModel.actualizarNotasPlato(it) },
+            label = { Text("Restricciones de este plato (opcional)") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = Color(0xFFF2722C),
+                focusedBorderColor = Color(0xFFF2722C),
+                unfocusedBorderColor = Color(0xFF333333),
+                focusedLabelColor = Color(0xFFF2722C),
+                unfocusedLabelColor = Color(0xFFC9BDB3)
+            )
         )
+
+        // CAMBIO FLUJO: al terminar de pedir las cosas del plato se abren
+        // las DOS opciones: pedir otro plato o ir al carrito.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = {
+                    // Guarda el plato actual y vuelve al paso 1.
+                    // popUpTo(inclusive) limpia el stack del flujo (paso 1..5)
+                    // para que "atrás" desde la nueva proteína no regrese al
+                    // resumen del plato anterior; launchSingleTop evita duplicar
+                    // la ruta si ya estaba en el stack.
+                    if (platoListo) {
+                        viewModel.agregarPlatoAlCarrito()
+                        navController.navigate("seleccionProteinaSC") {
+                            popUpTo("seleccionProteinaSC") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                },
+                enabled = platoListo,
+                border = BorderStroke(1.dp, Color(0xFFF2722C)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFF2722C),
+                    disabledContentColor = Color(0xFF9C9A92)
+                ),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Pedir otro plato",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+
+            Button(
+                onClick = {
+                    // Guarda el plato actual, pasa por el selector de hora de
+                    // retiro y termina en el carrito. popUpTo borra el flujo de
+                    // armado para que "atrás" desde la hora no regrese al resumen.
+                    if (platoListo) {
+                        viewModel.agregarPlatoAlCarrito()
+                        navController.navigate("horaRetiroSC") {
+                            popUpTo("seleccionProteinaSC") { inclusive = true }
+                        }
+                    }
+                },
+                enabled = platoListo,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF2722C),
+                    contentColor = Color.Black,
+                    disabledContainerColor = Color(0xFF382C24),
+                    disabledContentColor = Color(0xFF9C9A92)
+                ),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "Ir al carrito",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
+            }
+        }
     }
 }
 
@@ -100,14 +219,14 @@ fun EncabezadoResumen() {
     }
 }
 
-// 3. BARRA DE PROGRESO (Paso 4 de 4)
+// 3. BARRA DE PROGRESO (Paso 5 de 5)
 @Composable
 fun SeccionProgresoResumen() {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        StepProgressBar(totalSteps = 4, currentStep = 4)
+        StepProgressBar(totalSteps = 5, currentStep = 5)
 
         Text(
             text = "¡Paso final! Confirma tu plato personalizado.",
@@ -118,10 +237,14 @@ fun SeccionProgresoResumen() {
 }
 
 // 4. TARJETA DETALLE DEL PEDIDO
+// CAMBIO MVVM: ahora recibe el PlatoArmado real del ViewModel en vez de
+// un ResumenPedido con datos de ejemplo.
+// CAMBIO PRECIOS: los ítems base (proteína/acomp/ensalada) van sin precio;
+// solo se desglosan Plato $4.800 y Extras (+$X).
 @Composable
 fun TarjetaDetallePedido(
-    pedido: ResumenPedido,
-    precioTotal: Int,
+    plato: PlatoArmado,
+    precioTotal: Double,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -147,48 +270,59 @@ fun TarjetaDetallePedido(
                 letterSpacing = 1.sp
             )
 
-            // Proteína elegida
-            ItemResumen(titulo = "Proteína", detalle = pedido.proteina)
-
-            // Acompañamientos
+            // Proteína elegida (null = aún no ha elegido)
             ItemResumen(
-                titulo = "Acompañamientos",
-                detalle = pedido.acompanamientos.joinToString("\n• ", prefix = "• ")
+                titulo = "Proteína",
+                detalle = plato.proteina?.nombre ?: "Sin seleccionar"
             )
 
-            // Ensalada
-            ItemResumen(titulo = "Ensalada", detalle = pedido.ensalada)
+            // Acompañamientos (mínimo 1, máximo 2; próximamente pedidos especiales)
+            ItemResumen(
+                titulo = "Acompañamientos (${plato.acompanamientos.size})",
+                detalle = if (plato.acompanamientos.isEmpty()) {
+                    "Ninguno"
+                } else {
+                    plato.acompanamientos.joinToString("\n• ", prefix = "• ") { it.nombre }
+                }
+            )
 
-            // Extras / Agregados (si existen)
-            if (pedido.extras.isNotEmpty()) {
+            // Ensalada (null en el estado global = "Sin Ensalada")
+            ItemResumen(
+                titulo = "Ensalada",
+                detalle = plato.ensalada?.nombre ?: "Sin ensalada"
+            )
+
+            // Extras / Postres y bebidas (los ÚNICOS con precio propio)
+            if (plato.extras.isNotEmpty()) {
                 ItemResumen(
-                    titulo = "Agregados",
-                    detalle = pedido.extras.joinToString("\n") { "• ${it.first} (+$${it.second})" }
+                    titulo = "Extras (Postres y Bebidas)",
+                    detalle = plato.extras.joinToString("\n") {
+                        "• ${it.nombre} (+$${it.precio.toLong()})"
+                    }
                 )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            Divider(color = Color(0xFF333333), thickness = 1.dp)
+            HorizontalDivider(color = Color(0xFF333333), thickness = 1.dp)
 
-            // Desglose del total
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Total a pagar",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "$${precioTotal}",
-                    color = Color(0xFFF2722C),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+            // CAMBIO PRECIOS: desglose fijo "Plato" + "Extras" = "Total"
+            FilaPrecio(
+                etiqueta = "Plato (proteína + acompañamientos + ensalada)",
+                monto = "$${PlatoArmado.PRECIO_BASE.toLong()}",
+                esTotal = false
+            )
+            if (plato.extras.isNotEmpty()) {
+                FilaPrecio(
+                    etiqueta = "Extras (${plato.extras.size})",
+                    monto = "+$${plato.extras.sumOf { it.precio }.toLong()}",
+                    esTotal = false
                 )
             }
+            FilaPrecio(
+                etiqueta = "Total a pagar",
+                monto = "$${precioTotal.toLong()}",
+                esTotal = true
+            )
         }
     }
 }
@@ -212,22 +346,25 @@ fun ItemResumen(titulo: String, detalle: String) {
     }
 }
 
-// 5. BOTÓN DE CONFIRMACIÓN FINAL
+// Fila de desglose de precios (Plato / Extras / Total)
 @Composable
-fun BotonConfirmarPedido(precioTotal: Int, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF2722C),
-            contentColor = Color.Black
-        ),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        modifier = Modifier.fillMaxWidth()
+private fun FilaPrecio(etiqueta: String, monto: String, esTotal: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Confirmar y pedir ($${precioTotal})",
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp
+            text = etiqueta,
+            color = if (esTotal) Color.White else Color(0xFFC9BDB3),
+            fontSize = if (esTotal) 18.sp else 13.sp,
+            fontWeight = if (esTotal) FontWeight.Bold else FontWeight.Normal
+        )
+        Text(
+            text = monto,
+            color = if (esTotal) Color(0xFFF2722C) else Color.White,
+            fontSize = if (esTotal) 22.sp else 15.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }
