@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+/docs/memoria_tecnica.pdf
+/AGENTS.md
