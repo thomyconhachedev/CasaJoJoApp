@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -15,6 +16,12 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+
+        // BASE_URL por defecto del backend (EC2 de produccion/pruebas).
+        // En modo API se puede sobreescribir en runtime desde el panel Admin.
+        // Para probar en emulador, cambiar a "http://10.0.2.2:8080/".
+        // Debe terminar en "/".
+        buildConfigField("String", "BASE_URL", "\"http://100.62.186.171:8080/\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -46,7 +54,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -64,4 +74,6 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Iconos Material (AdminPanelSettings, LocationOn); versión la fija el BOM de Compose.
+    implementation("androidx.compose.material:material-icons-extended")
 }

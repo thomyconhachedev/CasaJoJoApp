@@ -27,16 +27,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
+import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
 // CAMBIO HORARIO (pantalla NUEVA):
 // - Selector de hora de retiro con slots cada 10 minutos
-//   desde 12:00 hasta 16:00 (25 opciones, ambos inclusive).
+//   desde 12:00 hasta 18:00 (TEMPORAL: antes 16:00, extendido a 18:00 solo
+//   para pruebas; ver TOTAL_MINUTOS).
 // - El valor se guarda en OrderUiState.horaRetiroSeleccionada a través
 //   de OrderViewModel.actualizarHoraRetiro() (antes era un "13:00" fijo
 //   sin UI para cambiarlo).
@@ -52,7 +55,7 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -66,54 +69,86 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Disponibilidad cada 10 minutos entre 12:00 y 16:00",
-                color = Color(0xFFC9BDB3),
+                text = "Disponibilidad cada 10 minutos entre 12:00 y 22:00",
+                color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
         }
 
-        // Grid scrollable de horas (4 por fila)
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 4.dp)
-        ) {
-            // CAMBIO HORARIO: 12:00, 12:10, ... 15:50, 16:00 (25 slots)
-            items(generarHorasRetiro()) { hora ->
-                ChipHora(
-                    hora = hora,
-                    isSelected = hora == horaSeleccionada,
-                    onSelect = { viewModel.actualizarHoraRetiro(hora) }
+        // Grid scrollable de horas (4 por fila). Solo se ofrecen las que
+        // respetan la regla del backend: al menos 20 minutos de anticipación.
+        val horasDisponibles = generarHorasRetiro()
+
+        if (horasDisponibles.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Ya no quedan horas de retiro disponibles hoy.\nEl menú se reinicia cada día.",
+                    color = JoJoTextoSecundario,
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center
                 )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(4),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                items(horasDisponibles) { hora ->
+                    ChipHora(
+                        hora = hora,
+                        isSelected = hora == horaSeleccionada,
+                        onSelect = { viewModel.actualizarHoraRetiro(hora) }
+                    )
+                }
             }
         }
 
         BotonContinuarHora(
             horaSeleccionada = horaSeleccionada,
+            habilitado = horaSeleccionada in horasDisponibles,
             onClick = {
-                // popUpTo evita apilar carrito si venimos desde el carrito
-                // (carrito -> hora -> carrito); si venimos del resumen se
-                // comporta como un navigate normal.
+                // FIX NAV: el plato se commitea AQUÍ (al confirmar la hora), no
+                // en el resumen. El guard de agregarPlatoAlCarrito() (platoCompleto)
+                // evita duplicados cuando venimos del carrito (platoEnArmadoActual
+                // ya vacío tras el primer commit).
+                viewModel.agregarPlatoAlCarrito()
+                // popUpTo pantalla_dos limpia el flujo de armado del stack: el
+                // carrito queda como destino limpio y "atrás" desde el carrito va
+                // al home, no a pasos obsoletos ni al resumen (que quedaría vacío).
                 navController.navigate("carritoSC") {
-                    popUpTo("carritoSC") { inclusive = true }
+                    popUpTo("pantalla_dos")
                 }
             }
         )
     }
 }
 
-// Genera los horarios "12:00" .. "16:00" cada 10 minutos (24h, formato fijo)
+// Horarios "12:00" .. "22:00" cada 10 minutos, descartando los que el
+// backend rechazaría: exige al menos 20 minutos de anticipación.
+private const val ANTICIPACION_MINIMA_MINUTOS = 20
+
+// TEMPORAL PARA PRUEBAS: 10 horas (12:00 -> 22:00). Volver a 6 para 18:00.
+private const val TOTAL_HORAS = 10
+
 private fun generarHorasRetiro(): List<String> {
-    val totalMinutos = 4 * 60 // de 12:00 a 16:00 = 240 minutos
+    val totalMinutos = TOTAL_HORAS * 60 // de 12:00 a 22:00 = 600 minutos
+    val horaMinima = java.time.LocalTime.now().plusMinutes(ANTICIPACION_MINIMA_MINUTOS.toLong())
     return buildList {
         for (minuto in 0..totalMinutos step 10) {
             val hora = (12 + minuto / 60).toString().padStart(2, '0')
             val minutos = (minuto % 60).toString().padStart(2, '0')
-            add("$hora:$minutos")
+            val slot = "$hora:$minutos"
+            if (!java.time.LocalTime.parse(slot).isBefore(horaMinima)) add(slot)
         }
     }
 }
@@ -124,11 +159,11 @@ private fun ChipHora(hora: String, isSelected: Boolean, onSelect: () -> Unit) {
         onClick = onSelect,
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF2A1D17) else Color(0xFF1E1E1E)
+            containerColor = if (isSelected) JoJoSeleccion else JoJoSuperficie
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) Color(0xFFF2722C) else Color(0xFF333333)
+            color = if (isSelected) JoJoNaranjo else JoJoBorde
         ),
         modifier = Modifier.aspectRatio(1.6f)
     ) {
@@ -138,7 +173,7 @@ private fun ChipHora(hora: String, isSelected: Boolean, onSelect: () -> Unit) {
         ) {
             Text(
                 text = hora,
-                color = if (isSelected) Color(0xFFFFAA75) else Color.White,
+                color = if (isSelected) JoJoAcento else Color.White,
                 fontSize = 15.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
@@ -147,18 +182,25 @@ private fun ChipHora(hora: String, isSelected: Boolean, onSelect: () -> Unit) {
 }
 
 @Composable
-private fun BotonContinuarHora(horaSeleccionada: String, onClick: () -> Unit) {
+private fun BotonContinuarHora(horaSeleccionada: String, habilitado: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
+        enabled = habilitado,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF2722C),
-            contentColor = Color.Black
+            containerColor = JoJoNaranjo,
+            contentColor = Color.Black,
+            disabledContainerColor = JoJoDeshabilitado,
+            disabledContentColor = JoJoGrisMedio
         ),
         contentPadding = PaddingValues(vertical = 16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Confirmar hora ($horaSeleccionada)",
+            text = if (habilitado) {
+                "Confirmar hora ($horaSeleccionada)"
+            } else {
+                "Elige una hora disponible"
+            },
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp
         )
