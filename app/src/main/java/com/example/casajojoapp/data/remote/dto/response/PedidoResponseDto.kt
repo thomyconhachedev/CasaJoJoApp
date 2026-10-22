@@ -2,21 +2,25 @@ package com.example.casajojoapp.data.remote.dto.response
 
 import com.google.gson.annotations.SerializedName
 
+// Respuesta de POST/GET /api/v1/pedidos (PedidoResponse del backend).
+// El total es montoTotal (lo calcula el servidor); los detalles vienen planos.
 data class PedidoResponseDto(
     @SerializedName("id") val id: Long,
-    @SerializedName("cliente_nombre") val clienteNombre: String,
-    @SerializedName("cliente_telefono") val clienteTelefono: String,
-    @SerializedName("hora_retiro") val horaRetiro: String,
-    @SerializedName("notas_restricciones") val notasRestricciones: String?,
-    @SerializedName("estado_pedido") val estadoPedido: String,
-    @SerializedName("estado_pago") val estadoPago: String,
-    @SerializedName("creado_en") val creadoEn: String,
+    @SerializedName("codigoSeguimiento") val codigoSeguimiento: String? = null,
+    @SerializedName("estado") val estado: String,
+    @SerializedName("horaRetiro") val horaRetiro: String,
+    @SerializedName("nombreCliente") val nombreCliente: String? = null,
+    @SerializedName("telefonoContacto") val telefonoContacto: String? = null,
+    @SerializedName("observaciones") val observaciones: String? = null,
+    @SerializedName("montoTotal") val montoTotal: Double = 0.0,
+    @SerializedName("fechaCreacion") val fechaCreacion: String? = null,
     @SerializedName("detalles") val detalles: List<DetallePedidoResponseDto> = emptyList()
 )
 
 data class DetallePedidoResponseDto(
-    @SerializedName("id") val id: Long,
-    @SerializedName("item_nombre") val itemNombre: String,
+    @SerializedName("itemMenuId") val itemMenuId: Long? = null,
+    @SerializedName("nombreItem") val nombreItem: String,
     @SerializedName("cantidad") val cantidad: Int,
-    @SerializedName("precio_unitario") val precioUnitario: Double
+    @SerializedName("precioUnitario") val precioUnitario: Double,
+    @SerializedName("observacion") val observacion: String? = null
 )

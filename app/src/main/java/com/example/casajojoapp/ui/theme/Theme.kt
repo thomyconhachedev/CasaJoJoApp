@@ -1,7 +1,6 @@
 package com.example.casajojoapp.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -10,7 +9,11 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-// RNF05: soporte obligatorio de modo claro y modo oscuro.
+// RNF05: la paleta clara (LightColors) se mantiene definida, pero la app
+// fuerza el modo oscuro por defecto: la identidad de marca de las pantallas
+// (fondos 0x12, superficies 0x1E, tokens JoJo*) es oscura y quedaría a medias
+// sobre un fondo claro. Si en el futuro se habilita modo claro real, basta
+// con volver a cablear isSystemInDarkTheme() en el default de darkTheme.
 // Primario: negro · Secundario: naranjo · Terciario: verde
 //
 // Nota sobre "on": el naranjo y el verde de marca no alcanzan 4.5:1 con texto
@@ -104,7 +107,7 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun CasaJoJoAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     // Color dinamico (Android 12+) apagado a proposito: la identidad de
     // marca (negro/naranjo/verde, RNF04) es obligatoria y no debe variar
     // segun el wallpaper del usuario.

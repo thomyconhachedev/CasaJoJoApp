@@ -28,8 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.casajojoapp.domain.model.Producto
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.componentes.StepProgressBar
+import com.example.casajojoapp.ui.theme.*
 
 // Modelo para Ensaladas
 data class Ensalada(
@@ -42,25 +44,19 @@ data class Ensalada(
 
 // 1. PANTALLA PRINCIPAL
 // CAMBIO MVVM (sección 3): firma ampliada con viewModel: OrderViewModel.
+// CAMBIO API: las ensaladas reales vienen del OrderViewModel (LOCAL o API);
+// "Sin Ensalada" es una opción especial de UI (id "0") que se guarda como null.
 @Composable
 fun SeleccionEnsaladaSC(navController: NavController, viewModel: OrderViewModel) {
-    val listaEnsaladas = listOf(
-        Ensalada("1", "Ensalada Chilena", "Tomate fresco, cebolla pluma y cilantro", "🥗"),
-        Ensalada("2", "Ensalada Mixta", "Lechuga, tomate y choclo", "🥬"),
-        Ensalada("3", "Ensalada de Apio", "Apio crujiente con palta", "🥑"),
-        Ensalada("0", "Sin Ensalada", "Prefiero no agregar ensalada a mi pedido", "🚫")
-    )
-
-    // CAMBIO MVVM: se REEMPLAZÓ el "var selectedId by remember { mutableStateOf("1") }"
-    // por estado compartido derivado del OrderViewModel. null equivale a no tener
-    // ensalada en el plato (que es exactamente lo que significa "Sin Ensalada").
     val uiState by viewModel.uiState.collectAsState()
+    val ensaladasReales: List<Producto> = uiState.ensaladasDisponibles
+    // CAMBIO MVVM: null equivale a no tener ensalada en el plato ("Sin Ensalada").
     val selectedId: String? = uiState.platoEnArmadoActual.ensalada?.id?.toString()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -70,21 +66,28 @@ fun SeleccionEnsaladaSC(navController: NavController, viewModel: OrderViewModel)
 
         SeccionProgresoEnsaladas()
 
-        ListaEnsaladas(
-            lista = listaEnsaladas,
-            selectedId = selectedId,
-            onEnsaladaSeleccionada = { id ->
-                if (id == "0") {
-                    // "Sin Ensalada" se guarda como null en el estado global
-                    viewModel.seleccionarEnsalada(null)
-                } else {
-                    // CAMBIO MVVM: persiste la ensalada elegida en el estado global
-                    listaEnsaladas.firstOrNull { it.id == id }
-                        ?.let { viewModel.seleccionarEnsalada(it.toProducto()) }
-                }
-            },
-            modifier = Modifier.weight(1f)
-        )
+        when {
+            uiState.isLoadingMenu -> Text(
+                text = "Cargando menú…",
+                color = JoJoTextoSecundario,
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f)
+            )
+            uiState.menuError != null -> Text(
+                text = uiState.menuError ?: "",
+                color = JoJoRojoClaro,
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            else -> ListaEnsaladas(
+                ensaladasReales = ensaladasReales,
+                selectedId = selectedId,
+                // CAMBIO MVVM: persiste la ensalada (o null para "Sin Ensalada")
+                // en el estado global, pasando el Producto de dominio DIRECTO.
+                onEnsaladaSeleccionada = { producto -> viewModel.seleccionarEnsalada(producto) },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         BotonContinuarEnsalada(
             // selectedId null == plato sin ensalada == opción "Sin Ensalada"
@@ -113,7 +116,7 @@ fun EncabezadoEnsaladas() {
         )
         Text(
             text = "Fresco y saludable para acompañar",
-            color = Color(0xFFC9BDB3),
+            color = JoJoTextoSecundario,
             fontSize = 14.sp
         )
     }
@@ -130,18 +133,18 @@ fun SeccionProgresoEnsaladas() {
 
         Text(
             text = "Selecciona 1 opción de ensalada incluida en tu plato.",
-            color = Color(0xFFFFF4EC),
+            color = JoJoTextoClaro,
             fontSize = 14.sp
         )
     }
 }
 
-// 4. LISTA DE CARDS
+// 4. LISTA DE CARDS (ensaladas reales del menú + opción "Sin Ensalada")
 @Composable
 fun ListaEnsaladas(
-    lista: List<Ensalada>,
+    ensaladasReales: List<Producto>,
     selectedId: String?, // CAMBIO MVVM: nullable porque deriva del OrderViewModel (null = sin ensalada)
-    onEnsaladaSeleccionada: (String) -> Unit,
+    onEnsaladaSeleccionada: (Producto?) -> Unit, // null = "Sin Ensalada"
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -150,17 +153,24 @@ fun ListaEnsaladas(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        lista.forEach { ensalada ->
-            // CAMBIO MVVM: el id "0" ("Sin Ensalada") no existe en el estado global
-            // (se guarda como null), por eso esa opción se marca como seleccionada
-            // cuando el plato no tiene ensalada.
-            val seleccionada =
-                if (ensalada.id == "0") selectedId == null else ensalada.id == selectedId
+        // Opción especial "Sin Ensalada" (id "0"): se marca seleccionada cuando
+        // el plato no tiene ensalada (selectedId == null).
+        EnsaladaCard(
+            ensalada = Ensalada(
+                id = "0",
+                nombre = "Sin Ensalada",
+                descripcion = "Prefiero no agregar ensalada a mi pedido",
+                emoji = "🚫"
+            ),
+            isSelected = (selectedId == null),
+            onSelect = { onEnsaladaSeleccionada(null) }
+        )
 
+        ensaladasReales.forEach { producto ->
             EnsaladaCard(
-                ensalada = ensalada,
-                isSelected = seleccionada,
-                onSelect = { onEnsaladaSeleccionada(ensalada.id) }
+                ensalada = producto.aEnsaladaVisual(),
+                isSelected = (producto.id.toString() == selectedId),
+                onSelect = { onEnsaladaSeleccionada(producto) }
             )
         }
     }
@@ -177,11 +187,11 @@ fun EnsaladaCard(
         onClick = onSelect,
         enabled = ensalada.estaDisponible,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF2A1D17) else Color(0xFF1E1E1E)
+            containerColor = if (isSelected) JoJoSeleccion else JoJoSuperficie
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) Color(0xFFF2722C) else Color(0xFF333333)
+            color = if (isSelected) JoJoNaranjo else JoJoBorde
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -210,7 +220,7 @@ fun EnsaladaCard(
                     )
                     Text(
                         text = ensalada.descripcion,
-                        color = Color(0xFFC9BDB3),
+                        color = JoJoTextoSecundario,
                         fontSize = 12.sp
                     )
                 }
@@ -220,7 +230,7 @@ fun EnsaladaCard(
                 selected = isSelected,
                 onClick = onSelect,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = Color(0xFFF2722C),
+                    selectedColor = JoJoNaranjo,
                     unselectedColor = Color.Gray
                 )
             )
@@ -236,7 +246,7 @@ fun BotonContinuarEnsalada(sinEnsalada: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF2722C),
+            containerColor = JoJoNaranjo,
             contentColor = Color.Black
         ),
         contentPadding = PaddingValues(vertical = 16.dp),

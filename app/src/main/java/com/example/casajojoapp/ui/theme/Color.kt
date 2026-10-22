@@ -47,6 +47,25 @@ val JoJoOutline = Color(0xFF767469)
 val JoJoOutlineClaro = Color(0xFFCFCBC3)
 val JoJoScrim = Color(0xFF000000)
 
+// --- Superficies y acentos de las pantallas ---
+// Antes estaban hardcodeados como Color(0xFF...) repartidos por las ~12
+// pantallas; se centralizan aqui para que cambiar un token actualice toda la app.
+val JoJoFondoApp = Color(0xFF121212)          // fondo de pantalla de la app
+val JoJoSuperficie = Color(0xFF1E1E1E)        // tarjetas / superficies elevadas
+val JoJoSeleccion = Color(0xFF2A1D17)         // tarjeta seleccionada
+val JoJoBorde = Color(0xFF333333)             // bordes y divisores
+val JoJoTextoSecundario = Color(0xFFC9BDB3)   // texto secundario calido
+val JoJoTextoClaro = Color(0xFFFFF4EC)        // texto claro (barra de progreso)
+val JoJoTextoRestriccion = Color(0xFFE8D9CF)  // texto de restricciones
+val JoJoAcento = Color(0xFFFFAA75)            // acento naranja claro (encabezados/chips)
+val JoJoNaranjoVivo = Color(0xFFFF6B2B)       // naranja vivo (borde tarjeta seleccionada)
+val JoJoNaranjoTexto = Color(0xFFFF9E66)      // texto naranja claro (encabezado barra de progreso)
+val JoJoCafeOscuro = Color(0xFF513020)        // badge contador / tarjeta promocion
+val JoJoBotonOscuro = Color(0xFF252321)       // boton secundario oscuro (contenedor)
+val JoJoDeshabilitado = Color(0xFF382C24)     // contenedor deshabilitado y segmento inactivo
+val JoJoRojoFondo = Color(0xFF5A1A1A)         // fondo del chip "AGOTADO"
+val JoJoRojoTexto = Color(0xFFFF6B6B)         // texto del chip "AGOTADO"
+
 // --- Superficies Material 3 ---
 // Sin definir estos roles, Material los calcula a partir de "primary" y les
 // aplica su tinte: en claro salian violeta (morado de la paleta baseline) y en

@@ -1,5 +1,6 @@
 package com.example.casajojoapp.ui.cliente.armado
 
+import com.example.casajojoapp.domain.model.Pedido
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.domain.model.Producto
 
@@ -22,11 +23,28 @@ data class OrderUiState(
     val ensaladasDisponibles: List<Producto> = emptyList(),
     val extrasDisponibles: List<Producto> = emptyList(),
     val horaRetiroSeleccionada: String = "13:00", // CAMBIO HORARIO: default dentro del rango 12:00–16:00
+    // CAMBIO CUENTAS: datos del cliente que viajan con el pedido. Se
+    // autocompletan desde el perfil local o se capturan como invitado.
+    val clienteNombre: String = "",
+    val clienteTelefono: String = "",
     // CAMBIO RESTRICCIONES: las notas ahora son POR PLATO (PlatoArmado.notas).
     // Este campo queda reservado para notas generales del pedido (futuro API).
     val notasCliente: String = "",
+    // ADMIN: pedidos ya enviados que quedan en la cola de admin, ordenados
+    // por hora de retiro en PantallaAdmin.
+    val pedidosEnviados: List<Pedido> = emptyList(),
+    // CAMBIO API: estado de la carga del menú (LOCAL o API). El menú se
+    // carga desde el repositorio vigente; se puede refrescar desde el panel
+    // Admin para ver cambios hechos en el backend.
+    val isLoadingMenu: Boolean = false,
+    val menuError: String? = null,
+    // ADMIN: mensaje de éxito tras "Refrescar menú" (se limpia en la próxima carga).
+    val menuMensajeExito: String? = null,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
+    // Último pedido confirmado por el repositorio (trae id y código de
+    // seguimiento del backend en modo API). Se limpia al armar otro plato.
+    val pedidoConfirmado: Pedido? = null,
     val errorMessage: String? = null
 ) {
     // CAMBIO MVVM (sección 1.B): costo total acumulado del carrito

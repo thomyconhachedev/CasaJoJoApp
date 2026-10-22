@@ -21,38 +21,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.casajojoapp.ui.componentes.Proteina
+import com.example.casajojoapp.domain.model.Producto
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.componentes.ProteinaCard
 import com.example.casajojoapp.ui.componentes.StepProgressBar
-
-val burgerEmoji = "\uD83C\uDF54"
-val salmonEmoji = "\uD83D\uDC1F"
+import com.example.casajojoapp.ui.theme.*
 
 // 1. PANTALLA PRINCIPAL (Contenedor estructurado en módulos)
 // CAMBIO MVVM (sección 3): firma ampliada con viewModel: OrderViewModel.
+// CAMBIO API: la lista de proteínas ya NO está hardcodeada; viene del
+// OrderViewModel (menú LOCAL o API según el interruptor del panel Admin).
 @Composable
 fun SeleccionProteinaSC(navController: NavController, viewModel: OrderViewModel) {
-    val listaProteinas = listOf(
-        Proteina("1", "Carne Mechada", "Vacuno cocción lenta 4 hrs", "🥩"),
-        Proteina("2", "Pollo al Horno", "Muslo marinado al limón y romero", "🍗"),
-        Proteina("3", "Salmon cocido", "Filete cocido con tomate y verduras", salmonEmoji),
-        Proteina("4", "Hamburguesa", "Hamburguesa dorada en mantequilla", burgerEmoji, estaDisponible = false),
-        Proteina("5", "Hamburguesa", "Hamburguesa dorada en mantequilla", burgerEmoji, estaDisponible = false),
-        Proteina("6", "Pescado Frito", "Reineta fresca del día", "🐟", estaDisponible = false)
-    )
-
     // CAMBIO MVVM: se REEMPLAZÓ el "var selectedId by remember { mutableStateOf("1") }"
     // por estado compartido. selectedId ahora se DERIVA del OrderViewModel, así al
-    // volver atrás la selección sigue siendo la que el usuario eligió (antes se
-    // reseteaba a "1" en cada recomposición de la ruta). null = sin elegir aún.
+    // volver atrás la selección sigue siendo la que el usuario eligió. null = sin elegir aún.
     val uiState by viewModel.uiState.collectAsState()
+    val proteinas: List<Producto> = uiState.proteinasDisponibles
     val selectedId: String? = uiState.platoEnArmadoActual.proteina?.id?.toString()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -62,17 +53,28 @@ fun SeleccionProteinaSC(navController: NavController, viewModel: OrderViewModel)
 
         SeccionProgreso()
 
-        ListaProteinas(
-            listaProteinas = listaProteinas,
-            selectedId = selectedId,
-            onProteinaSeleccionada = { id ->
-                // CAMBIO MVVM: la selección se persiste en el estado global
-                // (mapeando el modelo visual Proteina al modelo de dominio Producto).
-                listaProteinas.firstOrNull { it.id == id }
-                    ?.let { viewModel.seleccionarProteina(it.toProducto()) }
-            },
-            modifier = Modifier.weight(1f)
-        )
+        when {
+            uiState.isLoadingMenu -> Text(
+                text = "Cargando menú…",
+                color = JoJoTextoSecundario,
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f)
+            )
+            uiState.menuError != null -> Text(
+                text = uiState.menuError ?: "",
+                color = JoJoRojoClaro,
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            else -> ListaProteinas(
+                proteinas = proteinas,
+                selectedId = selectedId,
+                // CAMBIO MVVM: la selección se persiste en el estado global pasando
+                // el Producto de dominio DIRECTO (sin volver a mapear).
+                onProteinaSeleccionada = { producto -> viewModel.seleccionarProteina(producto) },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         BotonContinuar(
             // CAMBIO FLUJO: la proteína es obligatoria (1 por plato),
@@ -101,7 +103,7 @@ fun EncabezadoSeleccion() {
         )
         Text(
             text = "Un almuerzo preparado con cariño",
-            color = Color(0xFFC9BDB3),
+            color = JoJoTextoSecundario,
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal
         )
@@ -121,19 +123,19 @@ fun SeccionProgreso() {
             // CAMBIO PRECIOS: el plato cuesta $4.800 e incluye
             // 2 acompañamientos + ensalada (sin precio por ítem)
             text = "Elige 1 proteína. Tu plato cuesta $4.800 e incluye 2 acompañamientos y ensalada.",
-            color = Color(0xFFFFF4EC),
+            color = JoJoTextoClaro,
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal
         )
     }
 }
 
-// 4. SECCIÓN: Lista dinámicas de tarjetas de proteína
+// 4. SECCIÓN: Lista dinámica de tarjetas de proteína
 @Composable
 fun ListaProteinas(
-    listaProteinas: List<Proteina>,
+    proteinas: List<Producto>,
     selectedId: String?, // CAMBIO MVVM: ahora es nullable porque deriva del OrderViewModel
-    onProteinaSeleccionada: (String) -> Unit,
+    onProteinaSeleccionada: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -142,11 +144,11 @@ fun ListaProteinas(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        listaProteinas.forEach { proteina ->
+        proteinas.forEach { producto ->
             ProteinaCard(
-                proteina = proteina,
-                isSelected = (proteina.id == selectedId),
-                onSelect = { onProteinaSeleccionada(proteina.id) }
+                proteina = producto.aProteinaVisual(),
+                isSelected = (producto.id.toString() == selectedId),
+                onSelect = { onProteinaSeleccionada(producto) }
             )
         }
     }
@@ -160,10 +162,10 @@ fun BotonContinuar(habilitado: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         enabled = habilitado,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF2722C),
+            containerColor = JoJoNaranjo,
             contentColor = Color.Black,
-            disabledContainerColor = Color(0xFF382C24),
-            disabledContentColor = Color(0xFF9C9A92)
+            disabledContainerColor = JoJoDeshabilitado,
+            disabledContentColor = JoJoGrisMedio
         ),
         contentPadding = PaddingValues(vertical = 16.dp),
         modifier = Modifier.fillMaxWidth()

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.casajojoapp.ui.theme.*
 
 @Composable
 fun BannerContadorSeleccion(
@@ -24,7 +25,7 @@ fun BannerContadorSeleccion(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF1E1E1E)) // Fondo oscuro del contenedor
+            .background(JoJoSuperficie) // Fondo oscuro del contenedor
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -41,14 +42,14 @@ fun BannerContadorSeleccion(
         Row(
             modifier = Modifier
                 .background(
-                    color = Color(0xFF513020), // Tono café/naranja oscuro redondeado
+                    color = JoJoCafeOscuro, // Tono café/naranja oscuro redondeado
                     shape = RoundedCornerShape(50)
                 )
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
             Text(
                 text = "$actualesSeleccionados / $maxSelecciones seleccionados",
-                color = Color(0xFFFFAA75), // Color del texto naranja/salmón
+                color = JoJoAcento, // Color del texto naranja/salmón
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )

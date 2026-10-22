@@ -15,8 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -28,16 +28,20 @@ import com.example.casajojoapp.ui.cliente.armado.SeleccionPostresBebidasSC
 import com.example.casajojoapp.ui.cliente.armado.SeleccionProteinaSC
 import com.example.casajojoapp.ui.cliente.carrito.SeleccionarHoraRetiroSC
 import com.example.casajojoapp.ui.cliente.carrito.carritoSC
+import com.example.casajojoapp.ui.cliente.cuenta.PantallaCuenta
+import com.example.casajojoapp.ui.cliente.home.HomeScreen
 import com.example.casajojoapp.ui.theme.CasaJoJoAppTheme
+import com.example.casajojoapp.ui.admin.PantallaAdmin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // SystemBarStyle.auto detecta el modo oscuro y elige los iconos de la barra
-        // sin parametros, por eso no hace falta un themes.xml aparte para -night.
+        // La app fuerza modo oscuro (ver Theme.kt), así que las system bars usan
+        // estilo fijo oscuro (iconos claros) para que sigan legibles aunque el
+        // sistema esté en modo claro. Scrim TRANSPARENT: el fondo lo pinta cada pantalla.
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(TRANSPARENT, TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.auto(TRANSPARENT, TRANSPARENT),
+            statusBarStyle = SystemBarStyle.dark(TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(TRANSPARENT),
         )
         setContent {
             val orderViewModel: OrderViewModel = viewModel()
@@ -50,9 +54,12 @@ class MainActivity : ComponentActivity() {
                 Scaffold { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "pantalla_uno",
+                        startDestination = "home",
                         modifier = Modifier.padding(innerPadding),
                     ) {
+                        composable("home") {
+                            HomeScreen(navController = navController, viewModel = orderViewModel)
+                        }
                         composable("pantalla_uno") {
                             PantallaUno(navController)
                         }
@@ -87,6 +94,18 @@ class MainActivity : ComponentActivity() {
                         composable("carritoSC") {
                             carritoSC(navController = navController, viewModel = orderViewModel)
                         }
+                        // CAMBIO CUENTAS: pantalla de perfil local del cliente
+                        // (registro / editar / eliminar). Se accede desde el Header.
+                        composable("cuenta") {
+                            PantallaCuenta(navController = navController)
+                        }
+                        // ADMIN: cola de pedidos enviados, ordenados por hora de retiro.
+                        composable("admin") {
+                            PantallaAdmin(
+                                navController = navController,
+                                viewModel = orderViewModel
+                            )
+                        }
                     }
                 }
             }
@@ -94,6 +113,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Pantalla de inicio (restaurada desde HEAD): bienvenida + acceso al flujo de
+// armado y al panel de administración de la cola de pedidos.
 @Composable
 fun PantallaUno(navController: NavController) {
     Column {
@@ -101,8 +122,18 @@ fun PantallaUno(navController: NavController) {
         Button(onClick = { navController.navigate("pantalla_dos") }) {
             Text("Ir a pantalla dos")
         }
-        Button (onClick = { navController.navigate("seleccionProteinaSC")} , modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)){
+        Button(
+            onClick = { navController.navigate("seleccionProteinaSC") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
+        ) {
             Text("SELECCIONA LA PROTEINA")
+        }
+        Button(
+            onClick = { navController.navigate("admin") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
+        ) {
+            Text("PANEL ADMIN")
         }
     }
 }
+

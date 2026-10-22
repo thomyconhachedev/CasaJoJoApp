@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.casajojoapp.ui.theme.*
 
 data class Proteina(
     val id: String,
@@ -23,10 +24,10 @@ data class Proteina(
 )
 
 // Colores del patrón La Casa JoJo
-val DarkBackground = Color(0xFF1E1E1E)
-val PrimaryOrange = Color(0xFFFF6B2B)
-val SelectedBackground = Color(0xFF2A1D17)
-val BorderDark = Color(0xFF333333)
+val DarkBackground = JoJoSuperficie
+val PrimaryOrange = JoJoNaranjoVivo
+val SelectedBackground = JoJoSeleccion
+val BorderDark = JoJoBorde
 
 @Composable
 fun ProteinaCard(
@@ -88,12 +89,12 @@ fun ProteinaCard(
             // Indicador de Estado (Radio Button / Check / Agotado)
             if (!proteina.estaDisponible) {
                 Surface(
-                    color = Color(0xFF5A1A1A),
+                    color = JoJoRojoFondo,
                     shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         text = "AGOTADO",
-                        color = Color(0xFFFF6B6B),
+                        color = JoJoRojoTexto,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

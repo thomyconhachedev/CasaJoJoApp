@@ -12,11 +12,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.casajojoapp.ui.theme.*
 
 // Colores basados en la imagen
-val OrangeAccent = Color(0xFFFF6B2B) // Segmento activo
-val DarkSegment = Color(0xFF382C24)  // Segmento inactivo
-val TextOrange = Color(0xFFFF9E66)    // Texto del encabezado
+val OrangeAccent = JoJoNaranjoVivo // Segmento activo
+val DarkSegment = JoJoDeshabilitado  // Segmento inactivo
+val TextOrange = JoJoNaranjoTexto    // Texto del encabezado
 
 @Composable
 fun StepProgressBar(
@@ -29,7 +30,7 @@ fun StepProgressBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         // 1. Texto Superior: "ARMA TU ALMUERZO · PASO 1 DE 4"

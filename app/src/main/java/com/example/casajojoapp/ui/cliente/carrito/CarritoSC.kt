@@ -32,9 +32,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.casajojoapp.domain.model.Pedido
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
+import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
 // CAMBIO MVVM (prompt sección 4.B):
@@ -59,7 +61,7 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -74,13 +76,17 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
             )
             Text(
                 text = "Revisa los platos antes de enviarlo a cocina",
-                color = Color(0xFFC9BDB3),
+                color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
         }
 
-        // LISTA DE PLATOS: LazyColumn con los platos del carrito
-        if (uiState.carritoPlatos.isEmpty()) {
+        // Tras enviar, el backend devuelve el pedido confirmado (con id y
+        // código de seguimiento); se muestra hasta que se arma otro plato.
+        val confirmado = uiState.pedidoConfirmado
+        if (confirmado != null) {
+            TarjetaPedidoConfirmado(pedido = confirmado)
+        } else if (uiState.carritoPlatos.isEmpty()) {
             // Estado vacío
             Box(
                 modifier = Modifier
@@ -90,7 +96,7 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
             ) {
                 Text(
                     text = "Tu carrito está vacío.\nArma tu combo desde el menú.",
-                    color = Color(0xFFC9BDB3),
+                    color = JoJoTextoSecundario,
                     fontSize = 15.sp,
                     textAlign = TextAlign.Center
                 )
@@ -120,10 +126,10 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
                 .clickable { navController.navigate("horaRetiroSC") },
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "Hora de retiro", color = Color(0xFFC9BDB3), fontSize = 14.sp)
+            Text(text = "Hora de retiro", color = JoJoTextoSecundario, fontSize = 14.sp)
             Text(
                 text = "${uiState.horaRetiroSeleccionada}  ✏️",
-                color = Color(0xFFF2722C),
+                color = JoJoNaranjo,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -131,10 +137,10 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
 
         // CAMBIO MVVM: error devuelto por el ViewModel (futuro POST /api/pedidos)
         uiState.errorMessage?.let { mensaje ->
-            Text(text = mensaje, color = Color(0xFFE88B8A), fontSize = 13.sp)
+            Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
         }
 
-        HorizontalDivider(color = Color(0xFF333333), thickness = 1.dp)
+        HorizontalDivider(color = JoJoBorde, thickness = 1.dp)
 
         // BOTÓN FINAL: costo total acumulado + enviarPedido()
         Button(
@@ -142,10 +148,10 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
             // CAMBIO MVVM: deshabilitado con carrito vacío o durante la carga
             enabled = uiState.carritoPlatos.isNotEmpty() && !uiState.isLoading,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF2722C),
+                containerColor = JoJoNaranjo,
                 contentColor = Color.Black,
-                disabledContainerColor = Color(0xFF382C24),
-                disabledContentColor = Color(0xFF9C9A92)
+                disabledContainerColor = JoJoDeshabilitado,
+                disabledContentColor = JoJoGrisMedio
             ),
             contentPadding = PaddingValues(vertical = 16.dp),
             modifier = Modifier.fillMaxWidth()
@@ -164,14 +170,63 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
     }
 }
 
+// CONFIRMACIÓN DEL PEDIDO: código de seguimiento y total que calculó el
+// backend (montoTotal). Se reemplaza al armar otro plato.
+@Composable
+private fun TarjetaPedidoConfirmado(pedido: Pedido) {
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, JoJoVerde),
+        colors = CardDefaults.cardColors(containerColor = JoJoSuperficie),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "¡Pedido enviado a cocina!",
+                color = JoJoVerdeClaro,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Retiro a las ${pedido.horaRetiro}",
+                color = Color.White,
+                fontSize = 15.sp
+            )
+            if (!pedido.codigoSeguimiento.isNullOrBlank()) {
+                Text(
+                    text = "Código de seguimiento: ${pedido.codigoSeguimiento}",
+                    color = JoJoNaranjo,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Text(
+                text = "Total: $${pedido.total.toLong()}",
+                color = JoJoTextoSecundario,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Podrás ver los cambios de estado desde el panel de cocina.",
+                color = JoJoTextoSecundario,
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
 // TARJETA DE CADA PLATO DENTRO DEL CARRITO
 // CAMBIO MVVM: componente nuevo; muestra el desglose de un PlatoArmado.
 @Composable
 private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
     Card(
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, Color(0xFF333333)),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        border = BorderStroke(1.dp, JoJoBorde),
+        colors = CardDefaults.cardColors(containerColor = JoJoSuperficie),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -191,7 +246,7 @@ private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
                 )
                 Text(
                     text = "$${plato.precioTotal.toLong()}",
-                    color = Color(0xFFF2722C),
+                    color = JoJoNaranjo,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -199,14 +254,14 @@ private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
 
             Text(
                 text = "Ensalada: ${plato.ensalada?.nombre ?: "Sin ensalada"}",
-                color = Color(0xFFC9BDB3),
+                color = JoJoTextoSecundario,
                 fontSize = 13.sp
             )
 
             if (plato.acompanamientos.isNotEmpty()) {
                 Text(
                     text = plato.acompanamientos.joinToString(", ") { it.nombre },
-                    color = Color(0xFFC9BDB3),
+                    color = JoJoTextoSecundario,
                     fontSize = 13.sp
                 )
             }
@@ -218,7 +273,7 @@ private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
                     text = "Extras: " + plato.extras.joinToString(", ") {
                         "${it.nombre} (+$${it.precio.toLong()})"
                     },
-                    color = Color(0xFFFFAA75),
+                    color = JoJoAcento,
                     fontSize = 13.sp
                 )
             }
@@ -227,7 +282,7 @@ private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
             if (plato.notas.isNotBlank()) {
                 Text(
                     text = "Restricciones: ${plato.notas}",
-                    color = Color(0xFFE8D9CF),
+                    color = JoJoTextoRestriccion,
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic
                 )

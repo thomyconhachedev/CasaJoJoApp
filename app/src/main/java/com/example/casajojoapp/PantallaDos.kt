@@ -33,6 +33,7 @@ import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.casajojoapp.ui.theme.*
 
 
 
@@ -49,7 +50,7 @@ fun PantallaDos(navController: NavController) {
 
         SeccionInformativa()
 
-        TarjetaPromocion()
+        TarjetaPromocion(navController)
     }
 }
 
@@ -83,12 +84,12 @@ fun SeccionInformativa() {
 
 // 4. SECCIÓN: Tu tarjeta con la redondez que querías
 @Composable
-fun TarjetaPromocion() {
+fun TarjetaPromocion(navController: NavController) {
     Card(
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(2.dp, Color(0xFFF2722C)),
+        border = BorderStroke(2.dp, JoJoNaranjo),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF513020)
+            containerColor = JoJoCafeOscuro
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -100,7 +101,7 @@ fun TarjetaPromocion() {
             // Aquí adentro puedes empezar a meter el corazón, los títulos del plato, etc.
             Text(
                 text = "EL FAVORITO DE LA CASA",
-                color = Color(0xFFFFAA75),
+                color = JoJoAcento,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 24.dp, start = 10.dp)
@@ -122,28 +123,28 @@ fun TarjetaPromocion() {
             )
             Text(
                 text = "Tambien puedes elegir 1 proteina + 2 acompañamientos. Postres y bebidas por separado.",
-                color = Color(0xFFC9BDB3),
+                color = JoJoTextoSecundario,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 10.dp)
             )
             Button(
-                onClick = {},
+                onClick = { navController.navigate("seleccionProteinaSC") },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 // Los colores se pasan aquí como un parámetro del botón:
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF2722C),
+                    containerColor = JoJoNaranjo,
                     contentColor = Color.Black
                 ),
                 contentPadding = PaddingValues(vertical = 18.dp)
             ) {
                 Text("Elegir combo de hoy")
             }
-            Button (onClick = {}, modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp),
-                border = BorderStroke(1.dp,Color(0xFFF2722C)),
+            Button (onClick = { navController.navigate("seleccionProteinaSC") }, modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp),
+                border = BorderStroke(1.dp,JoJoNaranjo),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF252321),
-                    contentColor = Color(0xFFFFAA75)
+                    containerColor = JoJoBotonOscuro,
+                    contentColor = JoJoAcento
                 ),
                 contentPadding = PaddingValues(vertical = 18.dp)
             ) {

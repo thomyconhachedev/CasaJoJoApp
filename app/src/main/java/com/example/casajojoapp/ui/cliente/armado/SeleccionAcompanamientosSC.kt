@@ -28,9 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.casajojoapp.domain.model.Producto
 import com.example.casajojoapp.ui.componentes.BannerContadorSeleccion
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.componentes.StepProgressBar
+import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
 // CAMBIO FLUJO (pantalla NUEVA, paso 2 de 5):
@@ -55,17 +57,10 @@ data class Acompanamiento(
 
 @Composable
 fun SeleccionAcompanamientosSC(navController: NavController, viewModel: OrderViewModel) {
-    // Lista hardcode temporal (no consume GET /api/menu todavía)
-    val listaAcompanamientos = listOf(
-        Acompanamiento("1", "Papas Fritas", "Crujientes y doradas", "🍟"),
-        Acompanamiento("2", "Arroz Blanco", "Al estilo casero", "🍚"),
-        Acompanamiento("3", "Ensalada de Lechuga", "Lechuga fresca con limón", "🥬"),
-        Acompanamiento("4", "Puré de Papas", "Cremoso con mantequilla", "🥔"),
-        Acompanamiento("5", "Fideos al Ajillo", "Ajo y perejil", "🍝"),
-        Acompanamiento("6", "Quinoa", "Mezcla del día", "🌾", estaDisponible = false)
-    )
-
+    // CAMBIO API: la lista de acompañamientos ya NO está hardcodeada; viene del
+    // OrderViewModel (menú LOCAL o API según el interruptor del panel Admin).
     val uiState by viewModel.uiState.collectAsState()
+    val acompanamientos: List<Producto> = uiState.acompanamientosDisponibles
     // Derivado del estado global: llega intacto al Resumen y al Carrito
     val idsSeleccionados: Set<Long> =
         uiState.platoEnArmadoActual.acompanamientos.map { it.id }.toSet()
@@ -74,7 +69,7 @@ fun SeleccionAcompanamientosSC(navController: NavController, viewModel: OrderVie
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -85,25 +80,34 @@ fun SeleccionAcompanamientosSC(navController: NavController, viewModel: OrderVie
         SeccionProgresoAcompanamientos()
 
         BannerContadorSeleccion(
-            totalOpciones = listaAcompanamientos.size,
+            totalOpciones = acompanamientos.size,
             maxSelecciones = MAX_SELECCIONES,
             actualesSeleccionados = idsSeleccionados.size
         )
 
-        ListaAcompanamientos(
-            lista = listaAcompanamientos,
-            idsSeleccionados = idsSeleccionados,
-            maxSelecciones = MAX_SELECCIONES,
-            onToggle = { id ->
-                val idLargo = id.toLongOrNull()
-                val item = listaAcompanamientos.firstOrNull { it.id == id }
-                if (item != null && idLargo != null) {
-                    // CAMBIO MVVM: alterna en el estado global; el VM respeta el límite de 2
-                    viewModel.alternarAcompanamiento(item.toProducto())
-                }
-            },
-            modifier = Modifier.weight(1f)
-        )
+        when {
+            uiState.isLoadingMenu -> Text(
+                text = "Cargando menú…",
+                color = JoJoTextoSecundario,
+                fontSize = 16.sp,
+                modifier = Modifier.weight(1f)
+            )
+            uiState.menuError != null -> Text(
+                text = uiState.menuError ?: "",
+                color = JoJoRojoClaro,
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f)
+            )
+            else -> ListaAcompanamientos(
+                lista = acompanamientos,
+                idsSeleccionados = idsSeleccionados,
+                maxSelecciones = MAX_SELECCIONES,
+                // CAMBIO MVVM: alterna en el estado global pasando el Producto
+                // de dominio DIRECTO; el VM respeta el límite de 2.
+                onToggle = { producto -> viewModel.alternarAcompanamiento(producto) },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         BotonContinuarAcompanamientos(
             // CAMBIO: ahora es MÍNIMO 1 acompañamiento (máximo 2);
@@ -130,7 +134,7 @@ fun EncabezadoAcompanamientos() {
         )
         Text(
             text = "Incluidos en tu plato de $4.800",
-            color = Color(0xFFC9BDB3),
+            color = JoJoTextoSecundario,
             fontSize = 14.sp
         )
     }
@@ -146,7 +150,7 @@ fun SeccionProgresoAcompanamientos() {
 
         Text(
             text = "Obligatorio. Elige al menos 1 acompañamiento (hasta 2).",
-            color = Color(0xFFFFF4EC),
+            color = JoJoTextoClaro,
             fontSize = 14.sp
         )
     }
@@ -154,10 +158,10 @@ fun SeccionProgresoAcompanamientos() {
 
 @Composable
 fun ListaAcompanamientos(
-    lista: List<Acompanamiento>,
+    lista: List<Producto>,
     idsSeleccionados: Set<Long>,
     maxSelecciones: Int,
-    onToggle: (String) -> Unit,
+    onToggle: (Producto) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val limiteAlcanzado = idsSeleccionados.size >= maxSelecciones
@@ -168,18 +172,17 @@ fun ListaAcompanamientos(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        lista.forEach { item ->
-            val idLargo = item.id.toLongOrNull()
-            val estaSeleccionado = idLargo != null && idLargo in idsSeleccionados
+        lista.forEach { producto ->
+            val estaSeleccionado = producto.id in idsSeleccionados
 
             // Al llegar a 2, los no seleccionados quedan deshabilitados
             val puedeSeleccionar = estaSeleccionado || !limiteAlcanzado
 
             AcompanamientoCard(
-                acompanamiento = item,
+                acompanamiento = producto.aAcompanamientoVisual(),
                 isSelected = estaSeleccionado,
-                enabled = item.estaDisponible && puedeSeleccionar,
-                onSelect = { onToggle(item.id) }
+                enabled = producto.disponible && puedeSeleccionar,
+                onSelect = { onToggle(producto) }
             )
         }
     }
@@ -196,11 +199,11 @@ fun AcompanamientoCard(
         onClick = onSelect,
         enabled = enabled, // respeta disponibilidad y límite de 2
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF2A1D17) else Color(0xFF1E1E1E)
+            containerColor = if (isSelected) JoJoSeleccion else JoJoSuperficie
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) Color(0xFFF2722C) else Color(0xFF333333)
+            color = if (isSelected) JoJoNaranjo else JoJoBorde
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -230,7 +233,7 @@ fun AcompanamientoCard(
                     )
                     Text(
                         text = acompanamiento.descripcion,
-                        color = Color(0xFFC9BDB3),
+                        color = JoJoTextoSecundario,
                         fontSize = 12.sp
                     )
                 }
@@ -240,7 +243,7 @@ fun AcompanamientoCard(
                 onCheckedChange = { onSelect() },
                 enabled = enabled,
                 colors = CheckboxDefaults.colors(
-                    checkedColor = Color(0xFFF2722C),
+                    checkedColor = JoJoNaranjo,
                     checkmarkColor = Color.Black,
                     uncheckedColor = Color.Gray
                 )
@@ -255,10 +258,10 @@ fun BotonContinuarAcompanamientos(habilitado: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         enabled = habilitado,
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF2722C),
+            containerColor = JoJoNaranjo,
             contentColor = Color.Black,
-            disabledContainerColor = Color(0xFF382C24),
-            disabledContentColor = Color(0xFF9C9A92)
+            disabledContainerColor = JoJoDeshabilitado,
+            disabledContentColor = JoJoGrisMedio
         ),
         contentPadding = PaddingValues(vertical = 16.dp),
         modifier = Modifier.fillMaxWidth()

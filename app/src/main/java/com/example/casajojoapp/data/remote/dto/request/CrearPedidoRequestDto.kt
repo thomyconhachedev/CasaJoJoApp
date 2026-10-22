@@ -2,16 +2,20 @@ package com.example.casajojoapp.data.remote.dto.request
 
 import com.google.gson.annotations.SerializedName
 
+// Cuerpo de POST /api/v1/pedidos (CrearPedidoRequest del backend).
+// El servidor exige nombreCliente, horaRetiroSolicitada (HH:mm) e items;
+// los precios NO viajan: el backend los toma de item_menu.
 data class CrearPedidoRequestDto(
-    @SerializedName("cliente_nombre") val clienteNombre: String,
-    @SerializedName("cliente_telefono") val clienteTelefono: String,
-    @SerializedName("hora_retiro") val horaRetiro: String,
-    @SerializedName("notas_restricciones") val notasRestricciones: String?,
-    @SerializedName("detalles") val detalles: List<DetallePedidoRequestDto>
+    @SerializedName("usuarioId") val usuarioId: Long? = null,
+    @SerializedName("nombreCliente") val nombreCliente: String,
+    @SerializedName("telefonoContacto") val telefonoContacto: String? = null,
+    @SerializedName("horaRetiroSolicitada") val horaRetiroSolicitada: String,
+    @SerializedName("observaciones") val observaciones: String? = null,
+    @SerializedName("items") val items: List<ItemPedidoRequestDto>
 )
 
-data class DetallePedidoRequestDto(
-    @SerializedName("item_menu_id") val itemMenuId: Long,
-    @SerializedName("cantidad") val cantidad: Int,
-    @SerializedName("precio_unitario") val precioUnitario: Double
+data class ItemPedidoRequestDto(
+    @SerializedName("itemMenuId") val itemMenuId: Long,
+    @SerializedName("cantidad") val cantidad: Int = 1,
+    @SerializedName("observacion") val observacion: String? = null
 )

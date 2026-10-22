@@ -36,6 +36,7 @@ import androidx.navigation.NavController
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.componentes.StepProgressBar
+import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
 // CAMBIO MVVM (prompt sección 4.A):
@@ -85,7 +86,7 @@ fun ResumenPlatoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212))
+            .background(JoJoFondoApp)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -106,7 +107,7 @@ fun ResumenPlatoScreen(
             // Aviso en vez de botones muertos: indica qué falta para confirmar
             Text(
                 text = "Faltan datos: elige 1 proteína y al menos 1 acompañamiento.",
-                color = Color(0xFFFFAA75),
+                color = JoJoAcento,
                 fontSize = 13.sp
             )
         }
@@ -121,11 +122,11 @@ fun ResumenPlatoScreen(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
-                cursorColor = Color(0xFFF2722C),
-                focusedBorderColor = Color(0xFFF2722C),
-                unfocusedBorderColor = Color(0xFF333333),
-                focusedLabelColor = Color(0xFFF2722C),
-                unfocusedLabelColor = Color(0xFFC9BDB3)
+                cursorColor = JoJoNaranjo,
+                focusedBorderColor = JoJoNaranjo,
+                unfocusedBorderColor = JoJoBorde,
+                focusedLabelColor = JoJoNaranjo,
+                unfocusedLabelColor = JoJoTextoSecundario
             )
         )
 
@@ -151,10 +152,10 @@ fun ResumenPlatoScreen(
                     }
                 },
                 enabled = platoListo,
-                border = BorderStroke(1.dp, Color(0xFFF2722C)),
+                border = BorderStroke(1.dp, JoJoNaranjo),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFFF2722C),
-                    disabledContentColor = Color(0xFF9C9A92)
+                    contentColor = JoJoNaranjo,
+                    disabledContentColor = JoJoGrisMedio
                 ),
                 contentPadding = PaddingValues(vertical = 16.dp),
                 modifier = Modifier.weight(1f)
@@ -180,10 +181,10 @@ fun ResumenPlatoScreen(
                 },
                 enabled = platoListo,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF2722C),
+                    containerColor = JoJoNaranjo,
                     contentColor = Color.Black,
-                    disabledContainerColor = Color(0xFF382C24),
-                    disabledContentColor = Color(0xFF9C9A92)
+                    disabledContainerColor = JoJoDeshabilitado,
+                    disabledContentColor = JoJoGrisMedio
                 ),
                 contentPadding = PaddingValues(vertical = 16.dp),
                 modifier = Modifier.weight(1f)
@@ -213,7 +214,7 @@ fun EncabezadoResumen() {
         )
         Text(
             text = "Revisa tu selección antes de enviar a cocina",
-            color = Color(0xFFC9BDB3),
+            color = JoJoTextoSecundario,
             fontSize = 14.sp
         )
     }
@@ -230,7 +231,7 @@ fun SeccionProgresoResumen() {
 
         Text(
             text = "¡Paso final! Confirma tu plato personalizado.",
-            color = Color(0xFFFFF4EC),
+            color = JoJoTextoClaro,
             fontSize = 14.sp
         )
     }
@@ -249,9 +250,9 @@ fun TarjetaDetallePedido(
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, Color(0xFF333333)),
+        border = BorderStroke(1.dp, JoJoBorde),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = JoJoSuperficie
         ),
         modifier = modifier.fillMaxWidth()
     ) {
@@ -264,7 +265,7 @@ fun TarjetaDetallePedido(
         ) {
             Text(
                 text = "TU COMBO PERSONALIZADO",
-                color = Color(0xFFFFAA75),
+                color = JoJoAcento,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
@@ -303,11 +304,12 @@ fun TarjetaDetallePedido(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
-            HorizontalDivider(color = Color(0xFF333333), thickness = 1.dp)
+            HorizontalDivider(color = JoJoBorde, thickness = 1.dp)
 
             // CAMBIO PRECIOS: desglose fijo "Plato" + "Extras" = "Total"
             FilaPrecio(
-                etiqueta = "Plato (proteína + acompañamientos + ensalada)",
+                etiqueta = "Plato",
+                detalle = "proteína + acompañamientos + ensalada",
                 monto = "$${PlatoArmado.PRECIO_BASE.toLong()}",
                 esTotal = false
             )
@@ -333,7 +335,7 @@ fun ItemResumen(titulo: String, detalle: String) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = titulo,
-            color = Color(0xFFC9BDB3),
+            color = JoJoTextoSecundario,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -346,25 +348,47 @@ fun ItemResumen(titulo: String, detalle: String) {
     }
 }
 
-// Fila de desglose de precios (Plato / Extras / Total)
+// Fila de desglose de precios (Plato / Extras / Total).
+// La etiqueta y el monto van anclados a los extremos; "detalle" (opcional)
+// es una segunda línea pequeña bajo la etiqueta para no partir el texto en
+// varias filas cuando el nombre es largo.
 @Composable
-private fun FilaPrecio(etiqueta: String, monto: String, esTotal: Boolean) {
+private fun FilaPrecio(
+    etiqueta: String,
+    monto: String,
+    esTotal: Boolean,
+    detalle: String? = null
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = if (esTotal) Alignment.CenterVertically else Alignment.Top
     ) {
-        Text(
-            text = etiqueta,
-            color = if (esTotal) Color.White else Color(0xFFC9BDB3),
-            fontSize = if (esTotal) 18.sp else 13.sp,
-            fontWeight = if (esTotal) FontWeight.Bold else FontWeight.Normal
-        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = etiqueta,
+                color = if (esTotal) Color.White else JoJoTextoSecundario,
+                fontSize = if (esTotal) 18.sp else 13.sp,
+                fontWeight = if (esTotal) FontWeight.Bold else FontWeight.Normal
+            )
+            if (detalle != null) {
+                Text(
+                    text = detalle,
+                    color = JoJoGrisMedio,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+        }
         Text(
             text = monto,
-            color = if (esTotal) Color(0xFFF2722C) else Color.White,
+            color = if (esTotal) JoJoNaranjo else Color.White,
             fontSize = if (esTotal) 22.sp else 15.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 12.dp)
         )
     }
 }
