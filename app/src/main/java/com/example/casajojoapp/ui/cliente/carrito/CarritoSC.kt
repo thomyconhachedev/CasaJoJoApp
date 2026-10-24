@@ -1,5 +1,11 @@
 package com.example.casajojoapp.ui.cliente.carrito
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -83,33 +89,44 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
 
         // Tras enviar, el backend devuelve el pedido confirmado (con id y
         // código de seguimiento); se muestra hasta que se arma otro plato.
+        // ANIMACIÓN (IE 2.2.2): la tarjeta de confirmación entra con
+        // fade + expand y sale contraída, en vez de aparecer de golpe.
         val confirmado = uiState.pedidoConfirmado
-        if (confirmado != null) {
-            TarjetaPedidoConfirmado(pedido = confirmado)
-        } else if (uiState.carritoPlatos.isEmpty()) {
-            // Estado vacío
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Tu carrito está vacío.\nArma tu combo desde el menú.",
-                    color = JoJoTextoSecundario,
-                    fontSize = 15.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                // CAMBIO MVVM: se recorre uiState.carritoPlatos (antes no había nada)
-                items(uiState.carritoPlatos) { plato ->
-                    TarjetaPlatoCarrito(plato = plato)
+        AnimatedVisibility(
+            visible = confirmado != null,
+            enter = fadeIn(tween(350)) + expandVertically(tween(350)),
+            exit = fadeOut(tween(250)) + shrinkVertically(tween(250))
+        ) {
+            confirmado?.let { pedido -> TarjetaPedidoConfirmado(pedido = pedido) }
+        }
+
+        if (confirmado == null) {
+            if (uiState.carritoPlatos.isEmpty()) {
+                // Estado vacío
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Tu carrito está vacío.\nArma tu combo desde el menú.",
+                        color = JoJoTextoSecundario,
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    // ANIMACIÓN: key estable por plato + animateItem para que
+                    // las inserciones/retiros de platos se deslicen con fluidez.
+                    items(uiState.carritoPlatos, key = { it.clave }) { plato ->
+                        TarjetaPlatoCarrito(plato = plato, modifier = Modifier.animateItem())
+                    }
                 }
             }
         }
@@ -136,8 +153,11 @@ fun carritoSC(navController: NavController, viewModel: OrderViewModel) {
         }
 
         // CAMBIO MVVM: error devuelto por el ViewModel (futuro POST /api/pedidos)
-        uiState.errorMessage?.let { mensaje ->
-            Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+        // ANIMACIÓN: el mensaje de error entra/sale con fade.
+        AnimatedVisibility(visible = uiState.errorMessage != null) {
+            uiState.errorMessage?.let { mensaje ->
+                Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+            }
         }
 
         HorizontalDivider(color = JoJoBorde, thickness = 1.dp)
@@ -221,13 +241,14 @@ private fun TarjetaPedidoConfirmado(pedido: Pedido) {
 
 // TARJETA DE CADA PLATO DENTRO DEL CARRITO
 // CAMBIO MVVM: componente nuevo; muestra el desglose de un PlatoArmado.
+// "modifier" permite animar su inserción desde el LazyItemScope.
 @Composable
-private fun TarjetaPlatoCarrito(plato: PlatoArmado) {
+private fun TarjetaPlatoCarrito(plato: PlatoArmado, modifier: Modifier = Modifier) {
     Card(
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, JoJoBorde),
         colors = CardDefaults.cardColors(containerColor = JoJoSuperficie),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(14.dp),

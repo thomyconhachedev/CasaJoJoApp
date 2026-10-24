@@ -1,5 +1,7 @@
 package com.example.casajojoapp.ui.cliente.armado
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -79,36 +81,48 @@ fun SeleccionPostresBebidasSC(navController: NavController, viewModel: OrderView
 
         SeccionProgresoPostresBebidas()
 
-        when {
-            uiState.isLoadingMenu -> Text(
-                text = "Cargando menú…",
-                color = JoJoTextoSecundario,
-                fontSize = 16.sp,
-                modifier = Modifier.weight(1f)
-            )
-            uiState.menuError != null -> Text(
-                text = uiState.menuError ?: "",
-                color = JoJoRojoClaro,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            // Sección única con scroll; los extras suman adicional al plato base
-            else -> Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "EXTRAS",
-                    color = JoJoAcento,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+        // ANIMACIÓN (IE 2.2.2): crossfade entre cargando / error / lista.
+        val estadoMenu = when {
+            uiState.isLoadingMenu -> "cargando"
+            uiState.menuError != null -> "error"
+            else -> "lista"
+        }
+        Crossfade(
+            targetState = estadoMenu,
+            animationSpec = tween(300),
+            label = "estadoMenu",
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) { estado ->
+            when (estado) {
+                "cargando" -> Text(
+                    text = "Cargando menú…",
+                    color = JoJoTextoSecundario,
+                    fontSize = 16.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 )
-                extras.forEach { producto ->
-                    TarjetaPostreBebida(producto, idsSeleccionados, viewModel)
+                "error" -> Text(
+                    text = uiState.menuError ?: "",
+                    color = JoJoRojoClaro,
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                // Sección única con scroll; los extras suman al plato base
+                else -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "EXTRAS",
+                        color = JoJoAcento,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    extras.forEach { producto ->
+                        TarjetaPostreBebida(producto, idsSeleccionados, viewModel)
+                    }
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.example.casajojoapp.ui.cliente.armado
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -66,27 +68,40 @@ fun SeleccionEnsaladaSC(navController: NavController, viewModel: OrderViewModel)
 
         SeccionProgresoEnsaladas()
 
-        when {
-            uiState.isLoadingMenu -> Text(
-                text = "Cargando menú…",
-                color = JoJoTextoSecundario,
-                fontSize = 16.sp,
-                modifier = Modifier.weight(1f)
-            )
-            uiState.menuError != null -> Text(
-                text = uiState.menuError ?: "",
-                color = JoJoRojoClaro,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            else -> ListaEnsaladas(
-                ensaladasReales = ensaladasReales,
-                selectedId = selectedId,
-                // CAMBIO MVVM: persiste la ensalada (o null para "Sin Ensalada")
-                // en el estado global, pasando el Producto de dominio DIRECTO.
-                onEnsaladaSeleccionada = { producto -> viewModel.seleccionarEnsalada(producto) },
-                modifier = Modifier.weight(1f)
-            )
+        // ANIMACIÓN (IE 2.2.2): crossfade entre cargando / error / lista.
+        val estadoMenu = when {
+            uiState.isLoadingMenu -> "cargando"
+            uiState.menuError != null -> "error"
+            else -> "lista"
+        }
+        Crossfade(
+            targetState = estadoMenu,
+            animationSpec = tween(300),
+            label = "estadoMenu",
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) { estado ->
+            when (estado) {
+                "cargando" -> Text(
+                    text = "Cargando menú…",
+                    color = JoJoTextoSecundario,
+                    fontSize = 16.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                "error" -> Text(
+                    text = uiState.menuError ?: "",
+                    color = JoJoRojoClaro,
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                else -> ListaEnsaladas(
+                    ensaladasReales = ensaladasReales,
+                    selectedId = selectedId,
+                    // CAMBIO MVVM: persiste la ensalada (o null para "Sin Ensalada")
+                    // en el estado global, pasando el Producto de dominio DIRECTO.
+                    onEnsaladaSeleccionada = { producto -> viewModel.seleccionarEnsalada(producto) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         BotonContinuarEnsalada(

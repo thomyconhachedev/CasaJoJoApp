@@ -5,7 +5,11 @@ data class PlatoArmado(
     val acompanamientos: List<Producto> = emptyList(),
     val ensalada: Producto? = null,
     val extras: List<Producto> = emptyList(),
-    val notas: String = ""
+    val notas: String = "",
+    // ANIMACIÓN: identidad estable del plato para las animaciones de
+    // inserción/eliminación de la lista del carrito (key de LazyColumn).
+    // .copy() conserva la clave; cada plato nuevo nace con UUID propio.
+    val clave: String = java.util.UUID.randomUUID().toString()
 ) {
     companion object {
         // =========================================================

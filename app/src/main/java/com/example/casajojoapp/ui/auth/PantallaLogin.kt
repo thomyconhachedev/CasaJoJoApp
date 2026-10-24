@@ -1,5 +1,6 @@
 package com.example.casajojoapp.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -98,8 +99,11 @@ fun PantallaLogin(
             )
         }
 
-        uiState.error?.let { mensaje ->
-            Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+        // ANIMACIÓN: el mensaje de error entra/sale con fade.
+        AnimatedVisibility(visible = uiState.error != null) {
+            uiState.error?.let { mensaje ->
+                Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+            }
         }
 
         OutlinedTextField(

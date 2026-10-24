@@ -1,5 +1,7 @@
 package com.example.casajojoapp.ui.cliente.armado
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -85,28 +87,41 @@ fun SeleccionAcompanamientosSC(navController: NavController, viewModel: OrderVie
             actualesSeleccionados = idsSeleccionados.size
         )
 
-        when {
-            uiState.isLoadingMenu -> Text(
-                text = "Cargando menú…",
-                color = JoJoTextoSecundario,
-                fontSize = 16.sp,
-                modifier = Modifier.weight(1f)
-            )
-            uiState.menuError != null -> Text(
-                text = uiState.menuError ?: "",
-                color = JoJoRojoClaro,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            else -> ListaAcompanamientos(
-                lista = acompanamientos,
-                idsSeleccionados = idsSeleccionados,
-                maxSelecciones = MAX_SELECCIONES,
-                // CAMBIO MVVM: alterna en el estado global pasando el Producto
-                // de dominio DIRECTO; el VM respeta el límite de 2.
-                onToggle = { producto -> viewModel.alternarAcompanamiento(producto) },
-                modifier = Modifier.weight(1f)
-            )
+        // ANIMACIÓN (IE 2.2.2): crossfade entre cargando / error / lista.
+        val estadoMenu = when {
+            uiState.isLoadingMenu -> "cargando"
+            uiState.menuError != null -> "error"
+            else -> "lista"
+        }
+        Crossfade(
+            targetState = estadoMenu,
+            animationSpec = tween(300),
+            label = "estadoMenu",
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) { estado ->
+            when (estado) {
+                "cargando" -> Text(
+                    text = "Cargando menú…",
+                    color = JoJoTextoSecundario,
+                    fontSize = 16.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                "error" -> Text(
+                    text = uiState.menuError ?: "",
+                    color = JoJoRojoClaro,
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                else -> ListaAcompanamientos(
+                    lista = acompanamientos,
+                    idsSeleccionados = idsSeleccionados,
+                    maxSelecciones = MAX_SELECCIONES,
+                    // CAMBIO MVVM: alterna en el estado global pasando el Producto
+                    // de dominio DIRECTO; el VM respeta el límite de 2.
+                    onToggle = { producto -> viewModel.alternarAcompanamiento(producto) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         BotonContinuarAcompanamientos(

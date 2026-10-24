@@ -1,5 +1,7 @@
 package com.example.casajojoapp.ui.cliente.armado
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,27 +55,41 @@ fun SeleccionProteinaSC(navController: NavController, viewModel: OrderViewModel)
 
         SeccionProgreso()
 
-        when {
-            uiState.isLoadingMenu -> Text(
-                text = "Cargando menú…",
-                color = JoJoTextoSecundario,
-                fontSize = 16.sp,
-                modifier = Modifier.weight(1f)
-            )
-            uiState.menuError != null -> Text(
-                text = uiState.menuError ?: "",
-                color = JoJoRojoClaro,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            else -> ListaProteinas(
-                proteinas = proteinas,
-                selectedId = selectedId,
-                // CAMBIO MVVM: la selección se persiste en el estado global pasando
-                // el Producto de dominio DIRECTO (sin volver a mapear).
-                onProteinaSeleccionada = { producto -> viewModel.seleccionarProteina(producto) },
-                modifier = Modifier.weight(1f)
-            )
+        // ANIMACIÓN (IE 2.2.2): crossfade entre cargando / error / lista,
+        // la caja ocupa el espacio restante de la columna.
+        val estadoMenu = when {
+            uiState.isLoadingMenu -> "cargando"
+            uiState.menuError != null -> "error"
+            else -> "lista"
+        }
+        Crossfade(
+            targetState = estadoMenu,
+            animationSpec = tween(300),
+            label = "estadoMenu",
+            modifier = Modifier.weight(1f).fillMaxWidth()
+        ) { estado ->
+            when (estado) {
+                "cargando" -> Text(
+                    text = "Cargando menú…",
+                    color = JoJoTextoSecundario,
+                    fontSize = 16.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                "error" -> Text(
+                    text = uiState.menuError ?: "",
+                    color = JoJoRojoClaro,
+                    fontSize = 14.sp,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+                else -> ListaProteinas(
+                    proteinas = proteinas,
+                    selectedId = selectedId,
+                    // CAMBIO MVVM: la selección se persiste en el estado global
+                    // pasando el Producto de dominio DIRECTO (sin re-mapear).
+                    onProteinaSeleccionada = { producto -> viewModel.seleccionarProteina(producto) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         BotonContinuar(

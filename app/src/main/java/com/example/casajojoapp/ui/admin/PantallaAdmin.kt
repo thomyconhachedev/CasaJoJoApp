@@ -151,9 +151,13 @@ fun PantallaAdmin(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(pedidosEnCola) { pedido ->
+                    // ANIMACIÓN (IE 2.2.2): key por id de pedido + animateItem,
+                    // así al cambiar de estado los pedidos se reordenan con
+                    // desplazamiento fluido (los ENTREGADOS bajan al final).
+                    items(pedidosEnCola, key = { it.id }) { pedido ->
                         TarjetaPedidoAdmin(
                             pedido = pedido,
+                            modifier = Modifier.animateItem(),
                             onCambioEstado = { nuevoEstado ->
                                 // LOCAL: cambia el estado en memoria.
                                 // API: PATCH /api/v1/pedidos/{id}/estado.
@@ -317,13 +321,14 @@ private fun SeccionModoDatos(
 @Composable
 fun TarjetaPedidoAdmin(
     pedido: Pedido,
+    modifier: Modifier = Modifier,
     onCambioEstado: (EstadoPedido) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, JoJoBorde),
         colors = CardDefaults.cardColors(containerColor = JoJoSuperficie),
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
