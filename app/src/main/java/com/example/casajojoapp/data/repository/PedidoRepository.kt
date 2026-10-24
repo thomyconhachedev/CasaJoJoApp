@@ -24,11 +24,16 @@ class PedidoRepositoryLocal : PedidoRepository {
 
     private val pedidos = mutableListOf<Pedido>()
 
+    // Ids únicos y ascendentes: sin esto todos los pedidos quedaban con id=0
+    // y el panel admin solo podia cambiar el estado del PRIMERO de la lista.
+    private val secuenciaId = java.util.concurrent.atomic.AtomicLong(0)
+
     override suspend fun listarPedidos(): List<Pedido> = pedidos.toList()
 
     override suspend fun crearPedido(pedido: Pedido): Pedido {
-        pedidos.add(pedido)
-        return pedido
+        val pedidoConId = pedido.copy(id = secuenciaId.incrementAndGet())
+        pedidos.add(pedidoConId)
+        return pedidoConId
     }
 
     override suspend fun cambiarEstado(id: Long, nuevoEstado: EstadoPedido) {

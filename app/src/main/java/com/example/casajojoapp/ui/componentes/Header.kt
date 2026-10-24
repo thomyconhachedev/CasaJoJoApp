@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,7 +27,8 @@ import com.example.casajojoapp.R
 // - Flecha "atras" (←) que vuelve al paso anterior (navigateUp) en cada
 //   vista del flujo. Se oculta en la home con mostrarAtras = false.
 // - El logo + nombre ahora son clickeables y llevan a la vista principal
-//   (home, la pantalla principal de la app).
+//   (home, la pantalla principal de la app). popUpTo(home) + launchSingleTop
+//   evitan apilar copias repetidas de home/cuenta al tocar varias veces.
 @Composable
 fun HeaderPrincipal(
     navController: NavController,
@@ -39,7 +42,10 @@ fun HeaderPrincipal(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (mostrarAtras) {
-            IconButton(onClick = { navController.navigateUp() }) {
+            IconButton(
+                onClick = { navController.navigateUp() },
+                modifier = Modifier.semantics { contentDescription = "Volver" }
+            ) {
                 Text(
                     text = "\u2190", // ←
                     color = Color.White,
@@ -51,7 +57,12 @@ fun HeaderPrincipal(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clickable { navController.navigate("home") },
+                .clickable {
+                    navController.navigate("home") {
+                        popUpTo("home")
+                        launchSingleTop = true
+                    }
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -67,7 +78,9 @@ fun HeaderPrincipal(
             )
         }
 
-        Button(onClick = { navController.navigate("cuenta") }) {
+        Button(
+            onClick = { navController.navigate("cuenta") { launchSingleTop = true } }
+        ) {
             Text("Cuenta")
         }
     }

@@ -34,15 +34,15 @@ import androidx.navigation.NavController
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.*
+import com.example.casajojoapp.util.HorarioRetiro
 
 // =========================================================
 // CAMBIO HORARIO (pantalla NUEVA):
-// - Selector de hora de retiro con slots cada 10 minutos
-//   desde 12:00 hasta 18:00 (TEMPORAL: antes 16:00, extendido a 18:00 solo
-//   para pruebas; ver TOTAL_MINUTOS).
+// - Selector de hora de retiro con slots cada 10 minutos generados por
+//   util/HorarioRetiro (única fuente de verdad del rango; hoy 12:00–22:00
+//   TEMPORAL para pruebas — ver TOTAL_HORAS_PRUEBA en HorarioRetiro).
 // - El valor se guarda en OrderUiState.horaRetiroSeleccionada a través
-//   de OrderViewModel.actualizarHoraRetiro() (antes era un "13:00" fijo
-//   sin UI para cambiarlo).
+//   de OrderViewModel.actualizarHoraRetiro().
 // - Flujo: Resumen ("Ir al carrito") -> ESTA PANTALLA -> Carrito.
 //   Desde el Carrito también se puede volver a elegir (fila de hora).
 // =========================================================
@@ -69,7 +69,7 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Disponibilidad cada 10 minutos entre 12:00 y 22:00",
+                text = "Disponibilidad cada 10 minutos entre ${HorarioRetiro.rangoVisible()}",
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
@@ -77,7 +77,7 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
 
         // Grid scrollable de horas (4 por fila). Solo se ofrecen las que
         // respetan la regla del backend: al menos 20 minutos de anticipación.
-        val horasDisponibles = generarHorasRetiro()
+        val horasDisponibles = HorarioRetiro.generar()
 
         if (horasDisponibles.isEmpty()) {
             Box(
@@ -122,34 +122,16 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
                 // evita duplicados cuando venimos del carrito (platoEnArmadoActual
                 // ya vacío tras el primer commit).
                 viewModel.agregarPlatoAlCarrito()
-                // popUpTo pantalla_dos limpia el flujo de armado del stack: el
-                // carrito queda como destino limpio y "atrás" desde el carrito va
-                // al home, no a pasos obsoletos ni al resumen (que quedaría vacío).
+                // popUpTo(home) limpia el flujo de armado del stack: el carrito
+                // queda como destino limpio y "atrás" desde el carrito va al home.
+                // (Antes usaba popUpTo("pantalla_dos"), ruta que nunca está en el
+                // stack desde el home, así que no limpiaba nada.)
                 navController.navigate("carritoSC") {
-                    popUpTo("pantalla_dos")
+                    popUpTo("home")
+                    launchSingleTop = true
                 }
             }
         )
-    }
-}
-
-// Horarios "12:00" .. "22:00" cada 10 minutos, descartando los que el
-// backend rechazaría: exige al menos 20 minutos de anticipación.
-private const val ANTICIPACION_MINIMA_MINUTOS = 20
-
-// TEMPORAL PARA PRUEBAS: 10 horas (12:00 -> 22:00). Volver a 6 para 18:00.
-private const val TOTAL_HORAS = 10
-
-private fun generarHorasRetiro(): List<String> {
-    val totalMinutos = TOTAL_HORAS * 60 // de 12:00 a 22:00 = 600 minutos
-    val horaMinima = java.time.LocalTime.now().plusMinutes(ANTICIPACION_MINIMA_MINUTOS.toLong())
-    return buildList {
-        for (minuto in 0..totalMinutos step 10) {
-            val hora = (12 + minuto / 60).toString().padStart(2, '0')
-            val minutos = (minuto % 60).toString().padStart(2, '0')
-            val slot = "$hora:$minutos"
-            if (!java.time.LocalTime.parse(slot).isBefore(horaMinima)) add(slot)
-        }
     }
 }
 

@@ -19,8 +19,7 @@ object MenuLocalDataSource {
         Producto(2L, "Pollo al Horno", CategoriaItem.PROTEINA, 0.0, true, null, "Muslo marinado al limón y romero", "🍗"),
         Producto(3L, "Salmon cocido", CategoriaItem.PROTEINA, 0.0, true, null, "Filete cocido con tomate y verduras", "🐟"),
         Producto(4L, "Hamburguesa", CategoriaItem.PROTEINA, 0.0, false, null, "Hamburguesa dorada en mantequilla", "🍔"),
-        Producto(5L, "Hamburguesa", CategoriaItem.PROTEINA, 0.0, false, null, "Hamburguesa dorada en mantequilla", "🍔"),
-        Producto(6L, "Pescado Frito", CategoriaItem.PROTEINA, 0.0, false, null, "Reineta fresca del día", "🐟")
+        Producto(5L, "Pescado Frito", CategoriaItem.PROTEINA, 0.0, false, null, "Reineta fresca del día", "🐟")
     )
 
     val acompanamientos: List<Producto> = listOf(

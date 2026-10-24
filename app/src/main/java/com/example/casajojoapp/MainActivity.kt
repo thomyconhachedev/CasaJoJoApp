@@ -60,12 +60,6 @@ class MainActivity : ComponentActivity() {
                         composable("home") {
                             HomeScreen(navController = navController, viewModel = orderViewModel)
                         }
-                        composable("pantalla_uno") {
-                            PantallaUno(navController)
-                        }
-                        composable("pantalla_dos") {
-                            PantallaDos(navController)
-                        }
                         // CAMBIO MVVM (sección 3): la MISMA instancia de OrderViewModel
                         // creada arriba con viewModel() se inyecta en cada ruta del
                         // flujo de armado para que compartan un único estado global.
@@ -109,30 +103,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-    }
-}
-
-// Pantalla de inicio (restaurada desde HEAD): bienvenida + acceso al flujo de
-// armado y al panel de administración de la cola de pedidos.
-@Composable
-fun PantallaUno(navController: NavController) {
-    Column {
-        Text(text = "Bienvenido a CasaJoJoApp")
-        Button(onClick = { navController.navigate("pantalla_dos") }) {
-            Text("Ir a pantalla dos")
-        }
-        Button(
-            onClick = { navController.navigate("seleccionProteinaSC") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
-        ) {
-            Text("SELECCIONA LA PROTEINA")
-        }
-        Button(
-            onClick = { navController.navigate("admin") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 5.dp)
-        ) {
-            Text("PANEL ADMIN")
         }
     }
 }
