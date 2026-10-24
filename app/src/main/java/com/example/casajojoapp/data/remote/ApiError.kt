@@ -16,6 +16,8 @@ object ApiError {
         is HttpException -> mensajeDeBackend(e) ?: "Error ${e.code()} del servidor. Intenta de nuevo."
         is java.net.UnknownHostException -> "Sin conexión con el servidor. Revisa la URL o tu internet."
         is java.net.SocketTimeoutException -> "El servidor tardó demasiado en responder."
+        // URL mal formada al crear el Retrofit (p. ej. "ftp://..." o "foo").
+        is IllegalArgumentException -> "URL del backend inválida (debe empezar con http:// o https://)."
         else -> e.message ?: "Error inesperado. Intenta de nuevo."
     }
 

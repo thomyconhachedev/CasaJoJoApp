@@ -14,6 +14,12 @@ import com.example.casajojoapp.domain.model.Producto
 // =========================================================
 interface MenuRepository {
     suspend fun listarProductos(): List<Producto>
+
+    // "Refrescar menú" del panel admin. Por defecto = listar; la
+    // implementación remota además sincroniza (POST /sincronizar baja el
+    // Google Sheet a la BD del backend) y luego vuelve a leer el menú, para
+    // que el cliente actualice su menú desde la app sin usar Postman.
+    suspend fun refrescar(): List<Producto> = listarProductos()
 }
 
 // Menú hardcodeado (modo LOCAL). No depende de red.
@@ -30,6 +36,11 @@ class MenuRepositoryLocal : MenuRepository {
 class MenuRepositoryApi(private val api: ApiService) : MenuRepository {
     override suspend fun listarProductos(): List<Producto> =
         api.listarMenu().items.map { it.aDominio() }
+
+    override suspend fun refrescar(): List<Producto> {
+        api.sincronizarMenu() // POST: lee el Google Sheet y hace upsert en la BD
+        return listarProductos() // GET: devuelve el menú recién sincronizado
+    }
 }
 
 // Helpers de filtrado por categoría usados por el ViewModel.

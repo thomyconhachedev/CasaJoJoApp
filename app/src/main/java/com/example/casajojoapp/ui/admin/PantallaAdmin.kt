@@ -119,10 +119,11 @@ fun PantallaAdmin(
             baseUrl = baseUrl,
             isLoadingMenu = uiState.isLoadingMenu,
             menuError = uiState.menuError,
+            menuAdvertencia = uiState.menuAdvertencia,
             menuMensajeExito = uiState.menuMensajeExito,
             onCambioModo = { viewModel.cambiarModoDatos(it) },
             onCambioBaseUrl = { viewModel.cambiarBaseUrl(it) },
-            onRefrescarMenu = { viewModel.cargarMenu() }
+            onRefrescarMenu = { viewModel.refrescarMenu() }
         )
 
         uiState.errorMessage?.let { mensaje ->
@@ -173,6 +174,7 @@ private fun SeccionModoDatos(
     baseUrl: String,
     isLoadingMenu: Boolean,
     menuError: String?,
+    menuAdvertencia: String?,
     menuMensajeExito: String?,
     onCambioModo: (ModoDatos) -> Unit,
     onCambioBaseUrl: (String) -> Boolean,
@@ -296,12 +298,16 @@ private fun SeccionModoDatos(
                 )
             }
 
-            // Feedback del refresco: éxito (verde) o error (rojo).
+            // Feedback del refresco: éxito (verde), error (rojo) o
+            // advertencia de fallback local (ámbar) si el backend está caído.
             menuMensajeExito?.let { mensaje ->
                 Text(text = mensaje, color = JoJoVerdeClaro, fontSize = 13.sp)
             }
             menuError?.let { mensaje ->
                 Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+            }
+            menuAdvertencia?.let { mensaje ->
+                Text(text = mensaje, color = JoJoAmbar, fontSize = 13.sp)
             }
         }
     }

@@ -113,17 +113,23 @@ class OrderViewModel : ViewModel() {
 
     // =========================================================
     // MENÚ: carga los productos del repositorio vigente y los reparte por
-    // categoría en el estado. Se puede refrescar desde el panel Admin.
+    // categoría en el estado. En modo API con el backend caído se DEGRADA
+    // al menú local con una advertencia (el flujo de armado nunca se bloquea).
     // =========================================================
-    fun cargarMenu() {
+    fun cargarMenu(refrescarRemoto: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoadingMenu = true,
                 menuError = null,
-                menuMensajeExito = null
+                menuMensajeExito = null,
+                menuAdvertencia = null
             )
             try {
-                val productos = menuRepository().listarProductos()
+                val productos = if (refrescarRemoto) {
+                    menuRepository().refrescar()
+                } else {
+                    menuRepository().listarProductos()
+                }
                 _uiState.value = _uiState.value.copy(
                     isLoadingMenu = false,
                     proteinasDisponibles = productos.deCategoria(CategoriaItem.PROTEINA),
@@ -135,12 +141,32 @@ class OrderViewModel : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoadingMenu = false,
-                    menuError = "No se pudo refrescar el menú: ${ApiError.mensaje(e)}"
-                )
+                if (modoDatosRepository.modo.value == ModoDatos.API) {
+                    // Fallback LOCAL amable: se pinta el menú hardcodeado y la
+                    // advertencia queda para el panel admin (con su reintentar).
+                    val respaldo = MenuRepositoryLocal().listarProductos()
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingMenu = false,
+                        proteinasDisponibles = respaldo.deCategoria(CategoriaItem.PROTEINA),
+                        acompanamientosDisponibles = respaldo.deCategoria(CategoriaItem.ACOMPANAMIENTO),
+                        ensaladasDisponibles = respaldo.deCategoria(CategoriaItem.ENSALADA),
+                        extrasDisponibles = respaldo.extras(),
+                        menuAdvertencia = "Backend no disponible: se muestra el menú local de respaldo. (${ApiError.mensaje(e)})"
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingMenu = false,
+                        menuError = "No se pudo refrescar el menú: ${ApiError.mensaje(e)}"
+                    )
+                }
             }
         }
+    }
+
+    // Botón "Refrescar menú" del panel Admin: en API hace POST sincronizar
+    // + GET menú; en LOCAL recarga la fuente hardcodeada.
+    fun refrescarMenu() {
+        cargarMenu(refrescarRemoto = true)
     }
 
     fun seleccionarProteina(proteina: Producto) {

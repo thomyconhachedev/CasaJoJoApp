@@ -35,6 +35,9 @@ data class OrderUiState(
     // Admin para ver cambios hechos en el backend.
     val isLoadingMenu: Boolean = false,
     val menuError: String? = null,
+    // Backend inaccesible en modo API: el menú/cola se sirven desde la fuente
+    // local de respaldo y esta advertencia se muestra en el panel admin.
+    val menuAdvertencia: String? = null,
     // ADMIN: mensaje de éxito tras "Refrescar menú" (se limpia en la próxima carga).
     val menuMensajeExito: String? = null,
     val isLoading: Boolean = false,
