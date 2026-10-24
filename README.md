@@ -2,11 +2,11 @@
 
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2.10-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202026.02.01-4285F4?logo=jetpackcompose&logoColor=white)
-![Material Design 3](https://img.shields.io/badge/Material%203-1.4.0-00897B)
+![Material Design 3](https://img.shields.io/badge/Material%203-BOM-00897B)
 ![Min API 28](https://img.shields.io/badge/minSdk-28-3DDC84?logo=android&logoColor=white)
 ![Arquitectura](https://img.shields.io/badge/arquitectura-MVVM-orange)
 
-Aplicación Android para **La Casa JoJo SpA**, un negocio de comida casera y sushi en Chile. La app reemplaza el flujo de pedidos por WhatsApp y en papel con un **armado guiado de platos** en 5 pasos, carrito multi-plato y selección de hora de retiro, listo para conectarlo a un backend propio.
+Aplicación Android para **La Casa JoJo SpA**, un negocio de comida casera en Chile. La app reemplaza el flujo de pedidos por WhatsApp y en papel con un **armado guiado de platos** en 5 pasos, carrito multi-plato, selección de hora de retiro y panel de cocina, listo para conectarlo a un backend propio (Spring Boot).
 
 > **Idioma de la interfaz:** español (es-CL) · **Moneda:** pesos chilenos (CLP) · **Plato base:** $4.800
 
@@ -18,178 +18,151 @@ Aplicación Android para **La Casa JoJo SpA**, un negocio de comida casera y sus
 |---|---|---|
 | Lenguaje | Kotlin | 2.2.10 |
 | UI declarativa | Jetpack Compose (BOM) | 2026.02.01 |
-| Design system | Material Design 3 | 1.4.0 |
+| Design system | Material Design 3 (BOM) | — |
 | Navegación | Navigation-Compose | 2.10.2 |
-| Arquitectura | MVVM + State Hoisting | — |
+| Arquitectura | MVVM + State Hoisting + Service Locator | — |
 | Async / estado | Lifecycle ViewModel Compose | 2.11.0 |
-| HTTP (preparado) | Retrofit + Converter Gson | 2.11.0 |
+| HTTP | Retrofit + Converter Gson | 2.11.0 |
 | Serialización | Gson | 2.11.0 |
-| Imágenes | Coil Compose | 2.6.0 |
-| Persistencia (preparada) | Room KTX | 2.8.5 |
+| Persistencia local | Room | 2.8.5 |
+| Seguridad local | PBKDF2-HMAC-SHA256 (`PasswordHasher`) | — |
 | Build | Gradle 9.5.0 + AGP | 9.3.3 |
 | Lenguaje de scripts | Java (source/target) | 11 |
 
 - **SDK:** `minSdk` 28 (Android 9) · `targetSdk`/`compileSdk` 37
 - **Módulo único:** `:app` (single-module)
-- **Testing:** JUnit 4, Espresso y Compose UI Test (solo plantillas por ahora)
+- **Release:** R8 activo (podado y ofuscado)
+- **Testing:** JUnit 4, Espresso y Compose UI Test (solo plantillas por ahora; suite pendiente)
 
 ---
 
-## Arquitectura y Estructura del Proyecto
+## Sistema de usuarios y roles (híbrido)
 
-### Patrón arquitectónico
+La app maneja **tres roles**:
 
-La app usa **MVVM (Model–View–ViewModel)** con *state hoisting* sobre Jetpack Compose:
+| Rol | Cómo entra | Qué puede | Pedido viaja con |
+|---|---|---|---|
+| **INVITADO** | "Continuar como invitado" (sin cuenta) | Flujo completo de pedido; perfil local en Mi Cuenta | `usuarioId = null` |
+| **USUARIO** | Registro/login (tabla local `usuarios`, hash PBKDF2) | Lo anterior + sesión persistente y datos autocompletados | `usuarioId` |
+| **ADMIN** | Cuenta sembrada (`admin` / `casajojo2026` — cambiar antes de entregar) | Todo lo anterior + panel de cocina (oculto para los demás) | `usuarioId` |
 
-- **View (Compose):** pantallas stateless que renderizan el `OrderUiState` y emiten eventos al ViewModel vía callbacks/lambdas. No contienen lógica de negocio.
-- **ViewModel (`OrderViewModel`):** una **única instancia compartida** por todo el flujo de armado (creada con `viewModel()` en `MainActivity` e inyectada en cada ruta). Expone un `OrderUiState` inmutable y acciones como `alternarAcompanamiento()`, `agregarExtra()`, `actualizarNotasPlato()`, `actualizarHoraRetiro()` y `agregarPlatoAlCarrito()`. Las UI se actualizan reactivamente al mutar el estado con `.copy()`.
-- **Model (`domain/model`):** entidades de negocio puras sin dependencias de Android (`PlatoArmado`, `Producto`, `Pedido`). `PlatoArmado` encapsula el cálculo de precio (`PRECIO_BASE` + extras).
-- **Data (`data/remote`):** DTOs Gson listos para el API REST futuro (`CrearPedidoRequestDto`, `ItemMenuDto`, `MenuDiarioDto`, `PedidoResponseDto`). Mapeo dominio→DTO aislado en `Mapeadores.kt`. El envío real (`enviarPedido()`) es hoy un stub preparado para Retrofit.
-- **Navegación:** `NavHost` centralizado en `MainActivity.kt`. El estado sobrevive entre pantallas gracias a que el ViewModel se comparte, no a `SavedStateHandle`.
+- **Invitado es un rol de primera clase**: no todo el mundo quiere crear cuenta para comprar una vez.
+- El registro público **nunca otorga rol ADMIN**; esa cuenta solo nace sembrada por la app (y más adelante por el backend).
+- Las contraseñas se guardan **solo como hash** (PBKDF2-HMAC-SHA256 + salt) — nunca en claro.
+- El backend aún no tiene autenticación: el gate actual es de UI + datos locales. La migración a login real (JWT) está planificada en **`docs/backend_login_paso_a_paso.md`** y no requiere reescribir la UI (la app ya tiene la interfaz `AuthRepository` lista para su implementación remota).
+
+---
+
+## Arquitectura
+
+### Patrón
+
+**MVVM (Model–View–ViewModel)** con *state hoisting* sobre Jetpack Compose:
+
+- **View (Compose):** pantallas que renderizan `UiState` inmutables y emiten eventos al ViewModel.
+- **ViewModels:** `OrderViewModel` (armado + carrito + cola admin + menú), `CuentaViewModel` (perfil según sesión), `LoginViewModel` (login/registro/invitado).
+- **`ServicioLocator`:** contenedor de dependencias sin Hilt; instancias únicas de BD, sesión (`AuthRepository`), modo de datos y cola local, compartidas por todos los ViewModels (inicializado en `CasaJoJoApplication`).
+- **Model (`domain/model`):** entidades puras sin Android (`PlatoArmado`, `Producto`, `Pedido`, `Usuario`/`Sesion`/`Rol`).
+- **Data (`data/`):** Room local (clientes + usuarios), repositorios con doble implementación LOCAL/API, DTOs Retrofit y mappers aislados.
+- **Navegación:** `NavHost` centralizado en `MainActivity.kt`; la ruta `admin` exige sesión ADMIN (muestra un gate hacia el login si no).
 
 ### Estructura de carpetas
 
 ```
 CasaJoJoApp/
-├── app/
-│   ├── build.gradle.kts
-│   └── src/main/
-│       ├── AndroidManifest.xml
-│       ├── java/com/example/casajojoapp/
-│       │   ├── MainActivity.kt              # Activity + NavHost (rutas del flujo)
-│       │   ├── PantallaDos.kt               # Home (promociones, fecha)
-│       │   ├── data/
-│       │   │   └── remote/                  # DTOs para el backend REST (Gson)
-│       │   │       ├── MenuDiarioDto.kt
-│       │   │       └── dto/
-│       │   │           ├── ItemMenuDto.kt
-│       │   │           ├── request/CrearPedidoRequestDto.kt
-│       │   │           └── response/PedidoResponseDto.kt
-│       │   ├── domain/
-│       │   │   └── model/                   # Entidades de negocio (sin Android)
-│       │   │       ├── Pedido.kt
-│       │   │       ├── PlatoArmado.kt       # PRECIO_BASE + extras → precioTotal
-│       │   │       └── Proteina.kt          # Producto, CategoriaItem
-│       │   ├── ui/
-│       │   │   ├── cliente/
-│       │   │   │   ├── armado/              # VM + estado + pantallas 1–5 del flujo
-│       │   │   │   │   ├── OrderViewModel.kt
-│       │   │   │   │   ├── OrderUiState.kt
-│       │   │   │   │   ├── Mapeadores.kt
-│       │   │   │   │   ├── SeleccionProteinaSC.kt
-│       │   │   │   │   ├── SeleccionAcompanamientosSC.kt
-│       │   │   │   │   ├── SeleccionEnsaladasSC.kt
-│       │   │   │   │   ├── SeleccionPostresBebidasSC.kt
-│       │   │   │   │   └── ResumenPlatoScreen.kt
-│       │   │   │   └── carrito/             # Carrito y hora de retiro
-│       │   │   │       ├── CarritoSC.kt
-│       │   │   │       └── SeleccionarHoraRetiroSC.kt
-│       │   │   ├── componentes/             # Composables reutilizables
-│       │   │   │   ├── ContadorSeleccion.kt
-│       │   │   │   ├── Header.kt
-│       │   │   │   ├── ProgressBar.kt
-│       │   │   │   └── ProteinaCard.kt
-│       │   │   └── theme/                   # Color (tokens de marca), Theme, Type
-│       │   └── viewmodel/state/
-│       │       └── AdminQueueUiState.kt     # Estado reservado para módulo admin
-│       └── res/                             # Drawables, themes, values/-night
+├── app/src/main/java/com/example/casajojoapp/
+│   ├── MainActivity.kt              # Activity + NavHost (rutas + gate admin)
+│   ├── CasaJoJoApplication.kt       # Inicializa ServicioLocator
+│   ├── data/
+│   │   ├── ServicioLocator.kt       # Contenedor de dependencias (singletons)
+│   │   ├── local/                   # Room: clientes + usuarios (migración v1→v2)
+│   │   ├── modo/                    # Interruptor LOCAL/API + BASE_URL (prefs)
+│   │   ├── remote/                  # ApiService, DTOs Gson, NetworkModule, ApiError
+│   │   ├── repository/              # Auth, Cliente, Menú, Pedidos (LOCAL/API)
+│   │   └── mappers/                 # DTOs remotos ↔ dominio
+│   ├── domain/model/                # PlatoArmado, Producto, Pedido, Usuario...
+│   ├── ui/
+│   │   ├── admin/                   # Cola de cocina + gate de acceso
+│   │   ├── auth/                    # Login/registro/invitado
+│   │   ├── cliente/armado/          # VM + estado + pasos 1–5 del flujo
+│   │   ├── cliente/carrito/         # Carrito + hora de retiro
+│   │   ├── cliente/cuenta/          # Perfil según sesión
+│   │   ├── cliente/home/            # Home
+│   │   ├── componentes/             # Header, cards, barra de progreso
+│   │   └── theme/                   # Tokens de marca (contraste WCAG AA)
+│   └── util/                        # HorarioRetiro, PasswordHasher
 ├── docs/
-│   └── memoria_tecnica.pdf                  # Documentación técnica completa
+│   ├── backend_login_paso_a_paso.md # Cómo llevar el login al backend
+│   └── memoria_tecnica.pdf
+├── API.md                           # Contrato que habla la app con el backend
 ├── AGENTS.md
-├── gradle/libs.versions.toml                # Version catalog
-├── build.gradle.kts
-└── settings.gradle.kts
+└── gradle/libs.versions.toml        # Version catalog
 ```
 
 ---
 
-## Requisitos Previos e Instalación
-
-### Requisitos
-
-| Herramienta | Versión mínima |
-|---|---|
-| Android Studio | Koala o superior (estable) |
-| JDK | 11+ (resuelta por el toolchain de Gradle) |
-| Android SDK | API 37 instalada |
-| Dispositivo/emulador | Android 9 (API 28) o superior |
-| Git | Cualquier versión reciente |
-
-No se requieren credenciales ni variables de entorno: la app funciona con datos en memoria; la integración con el backend está preparada pero no conectada.
-
-### Instalación
+## Cómo ejecutar
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/thomyconhachedev/CasaJoJoApp.git
-cd CasaJoJoApp
-
-# 2. Abrir en Android Studio (File > Open) y dejar sincronizar Gradle
-#    — o desde terminal:
-./gradlew assembleDebug   # descarga dependencias y genera el APK
-
-# 3. Ejecutar en dispositivo/emulador conectado
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew compileDebugKotlin      # chequeo rápido
+./gradlew assembleDebug           # APK debug
+./gradlew assembleRelease         # APK release (R8; sin firmar)
+./gradlew testDebugUnitTest       # tests unitarios
+./gradlew lintDebug               # análisis estático
 ```
+
+Requisitos: Android Studio Koala+, JDK 17+ (toolchain resuelta por Gradle), Android SDK API 37.
 
 ---
 
-## Cómo Ejecutar el Proyecto
-
-```bash
-# Compilar (chequeo rápido, sin generar APK)
-./gradlew compileDebugKotlin
-
-# Build de desarrollo (APK en app/build/outputs/apk/debug/)
-./gradlew assembleDebug
-
-# Build de producción (release)
-./gradlew assembleRelease
-
-# Tests unitarios
-./gradlew testDebugUnitTest
-
-# Tests instrumentados (requiere dispositivo/emulador conectado)
-./gradlew connectedDebugAndroidTest
-
-# Análisis estático
-./gradlew lintDebug
-```
-
-Para desarrollo iterativo, usar **Run ▶** de Android Studio (modo debug con hot-reload de Compose). La app sigue el tema del sistema (claro/oscuro) automáticamente; no incluye interruptor propio.
-
----
-
-## Características Principales
+## Características principales
 
 ### Flujo de armado de platos (cliente)
 
 | # | Pantalla | Descripción |
 |---|---|---|
-| 1/5 | **Proteína** | Selección obligatoria entre el menú del día; indica disponibilidad ("agotado"). |
-| 2/5 | **Acompañamientos** | Mínimo 1, máximo 2 (validado en el ViewModel). |
-| 3/5 | **Ensaladas** | Opcional; opción "Sin Ensalada". |
-| 4/5 | **Postres y bebidas** | Opcionales; **únicos ítems con precio individual**. |
-| 5/5 | **Resumen** | Restricciones/alergias **por plato** (ej. "sin cebolla"); permite pedir otro plato o ir al carrito. |
+| 1/5 | **Proteína** | Obligatoria; muestra estado "AGOTADO" si el backend la marcó |
+| 2/5 | **Acompañamientos** | Mínimo 1, máximo 2 (validado en el ViewModel) |
+| 3/5 | **Ensaladas** | Opcional; opción "Sin Ensalada" |
+| 4/5 | **Postres y bebidas** | Opcionales; **únicos ítems con precio individual** |
+| 5/5 | **Resumen** | Restricciones **por plato**; pedir otro plato o ir al carrito |
 
-### Carrito y retiro
+### Carrito, retiro y envío
 
-- Múltiples platos armados, cada uno con su resumen y restricciones.
-- **Hora de retiro** elegible en 25 tramos de 12:00 a 16:00 (cada 10 minutos), modificable desde el carrito.
-- Total acumulado calculado reactivamente (`totalCarrito`).
+- Múltiples platos; cada uno con su resumen y restricciones.
+- Hora de retiro en slots de 10 minutos con anticipación mínima de 20 min
+  (**rango de pruebas 12:00–22:00**; el rango real del negocio se ajusta en
+  `util/HorarioRetiro.kt` — una sola constante, todo el texto deriva de ella).
+- Envío delegado al repositorio vigente; en API el backend asigna id/código.
+
+### Panel de cocina (admin)
+
+- Cola ordenada por hora de retiro con máquina de estados
+  (`RECIBIDO → EN_PREPARACION → LISTO_PARA_RETIRO → ENTREGADO`, cancelar desde estados iniciales).
+- Interruptor **LOCAL/API** + URL del backend (validada `http/https`).
+- **"Refrescar menú" = `POST /sincronizar` + `GET /menu`**: el cliente
+  actualiza su menú (Google Sheet → BD) desde la app, sin Postman.
+- **Degración elegante:** si el backend está caído, menú y cola se sirven
+  desde la fuente local con advertencia ámbar y botón de reintento.
 
 ### Reglas de negocio
 
-- Un plato es completo con **proteína + al menos 1 acompañamiento**.
-- Precio del plato fijo: `$4.800` (`PlatoArmado.PRECIO_BASE`); solo extras suman aparte.
-- Un único `OrderViewModel` compartido garantiza consistencia del pedido en todo el flujo.
+- Plato completo = 1 proteína + al menos 1 acompañamiento.
+- Precio del plato fijo `$4.800` (`PlatoArmado.PRECIO_BASE`); solo extras suman.
+- Pedidos de cuentas se asocian (`usuarioId`); los de invitados viajan sin cuenta.
 
-### Transversal
+---
 
-- **Material Design 3** con paleta de marca propia (naranjo/verde JoJo) y contraste WCAG AA verificado.
-- **Modo oscuro** automático siguiendo el sistema (`values-night`, `SystemBarStyle.auto`, edge-to-edge).
-- **DTOs y mapeadores** listos para el endpoint de pedidos (`POST /pedidos`) con Retrofit/Gson; el envío se activará al definir la base URL del backend Spring Boot + PostgreSQL.
-- **Estado reservado** para módulo de administración (`AdminQueueUiState`) y seguimiento de pedidos (colores de estado RF13 en `Color.kt`).
+## Seguridad y roadmap
+
+**Hecho en esta MVP:** contraseñas solo como hash (PBKDF2+salt), roles con gate de admin en UI, contraseñas jamás en logs ni respuestas, R8 activo en release, sin secretos en el repo, URL del backend validada.
+
+**Decidido conscientemente para la MVP (roadmap):**
+
+1. **HTTPS:** la app hoy habla HTTP sobre red interna (Tailscale). Antes de exponerla se termina HTTPS en el backend y se elimina `usesCleartextTraffic`.
+2. **Autenticación real de API:** login JWT en el backend + `AuthApi` en el móvil (paso a paso en `docs/backend_login_paso_a_paso.md`). Mientras tanto, el gate admin es de UI, no de datos: los endpoints siguen abiertos en la red interna.
+3. **Idempotencia en `POST /pedidos`** para evitar duplicados ante timeouts.
+4. **Declaración de datos personales y política de privacidad** antes de publicar en Google Play.
 
 ---
 
