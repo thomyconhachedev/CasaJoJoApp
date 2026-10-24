@@ -1,17 +1,23 @@
 package com.example.casajojoapp
 
+import android.Manifest
 import android.graphics.Color.TRANSPARENT
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -48,6 +54,28 @@ class MainActivity : ComponentActivity() {
             val orderViewModel: OrderViewModel = viewModel()
             CasaJoJoAppTheme {
                 val navController = rememberNavController()
+
+                // NOTIFICACIONES LOCALES (recurso nativo): pedir el permiso
+                // POST_NOTIFICATIONS en runtime en Android 13+. En versiones
+                // anteriores el permiso se otorga al instalar.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val contexto = LocalContext.current
+                    val permisoNotificaciones = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { concedido ->
+                        // Si se rechaza, la app sigue funcionando: solo no
+                        // mostrará los avisos de estado de comanda.
+                        if (!concedido) {
+                            android.util.Log.i(
+                                "Notificaciones",
+                                "Permiso POST_NOTIFICATIONS denegado en ${contexto.packageName}"
+                            )
+                        }
+                    }
+                    LaunchedEffect(Unit) {
+                        permisoNotificaciones.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
 
                 // Sin Scaffold el rol "background" del ColorScheme nunca se pinta y
                 // el Text resolveria contra LocalContentColor (negro fijo), no contra

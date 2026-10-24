@@ -308,6 +308,12 @@ class OrderViewModel : ViewModel() {
                     pedidoConfirmado = confirmado,
                     carritoPlatos = emptyList()
                 )
+                // NOTIFICACIÓN: avisa a caja de que llegó una comanda nueva.
+                com.example.casajojoapp.data.ServicioLocator.notificador.notificar(
+                    id = notificacionId(confirmado.id),
+                    titulo = "Nueva comanda #${confirmado.id}",
+                    texto = "Retiro a las ${confirmado.horaRetiro} · ${confirmado.clienteNombre}"
+                )
                 cargarPedidos() // refresca la cola de admin desde el repositorio
             } catch (e: CancellationException) {
                 throw e
@@ -349,6 +355,17 @@ class OrderViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 pedidoRepository().cambiarEstado(id, nuevoEstado)
+                // NOTIFICACIÓN LOCAL: el cliente en este dispositivo ve el
+                // cambio de estado (p. ej. "Listo para retiro").
+                com.example.casajojoapp.data.ServicioLocator.notificador.notificar(
+                    id = notificacionId(id),
+                    titulo = "Comanda #$id",
+                    texto = if (nuevoEstado == EstadoPedido.LISTO_PARA_RETIRO) {
+                        "¡Listo para retiro! Pasa por tu pedido."
+                    } else {
+                        "Estado actualizado: ${nuevoEstado.nombre}"
+                    }
+                )
                 cargarPedidos()
             } catch (e: CancellationException) {
                 throw e
@@ -359,6 +376,12 @@ class OrderViewModel : ViewModel() {
             }
         }
     }
+
+    // Id de notificación derivado del pedido: la misma comanda reemplaza
+    // su aviso anterior en vez de apilar notificaciones repetidas.
+    private fun notificacionId(idPedido: Long): Int =
+        if (idPedido in 1..Int.MAX_VALUE) idPedido.toInt()
+        else (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
 
     // Interruptor LOCAL / API del panel Admin. Al cambiar, recarga menú y cola.
     fun cambiarModoDatos(nuevo: ModoDatos) {

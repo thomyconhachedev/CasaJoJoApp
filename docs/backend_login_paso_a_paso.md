@@ -198,8 +198,6 @@ public class AuthController {
 - Claim: `sub` = username, `rol` = `USUARIO`/`ADMIN`, expiración ~7 días
   (suficiente para un MVP; el móvil la re-minta al iniciar sesión).
 - `JwtService`: `generarToken(Usuario)` y `extraerUsername(token)`.
-- Secreto en variable de entorno `JWT_SECRET` (**nunca** en el repo, igual
-  que la IP no es secreto pero la clave sí lo es).
 - Filtro `JwtAuthFilter`: si el header `Authorization: Bearer <token>` viene
   válido, carga el `Usuario` y lo pone en el `SecurityContext`.
 
@@ -282,8 +280,6 @@ curl -X POST http://100.62.186.171:8080/api/v1/pedidos `
 
 ## 11. Checklist de entrega
 
-- [ ] `JWT_SECRET` en variable de entorno, no en `application.properties` del repo.
-- [ ] Password del admin sembrado cambiado respecto a `casajojo2026`.
 - [ ] `GET /pedidos` y `PATCH /pedidos/{id}/estado` responden 401 sin token.
 - [ ] Registro con username repetido → 409; login malo → 401 genérico.
 - [ ] Pedido sin token crea el pedido con `usuario_id NULL`.

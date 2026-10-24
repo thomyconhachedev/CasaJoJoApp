@@ -4,6 +4,9 @@
 
     <!-- MODO API: necesario para consumir el backend (Retrofit). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- NOTIFICACIONES LOCALES (Android 13+): aviso de cambio de estado
+         de comanda. Se pide en runtime desde MainActivity. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".CasaJoJoApplication"

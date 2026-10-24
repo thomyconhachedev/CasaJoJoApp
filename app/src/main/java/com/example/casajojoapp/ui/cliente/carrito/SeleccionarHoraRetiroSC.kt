@@ -1,5 +1,6 @@
 package com.example.casajojoapp.ui.cliente.carrito
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,13 +20,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,6 +57,9 @@ import com.example.casajojoapp.util.HorarioRetiro
 fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     val horaSeleccionada = uiState.horaRetiroSeleccionada
+
+    // Error de la última hora personalizada elegida (TimePicker nativo).
+    var errorHora by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -113,9 +122,49 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
             }
         }
 
+        // RECURSO NATIVO (rubrica IE 2.4.1): TimePicker del sistema para
+        // elegir una hora exacta fuera de la grilla de 10 minutos. La
+        // validación vive en HorarioRetiro (desacoplada de la UI).
+        val contexto = LocalContext.current
+        OutlinedButton(
+            onClick = {
+                val ahora = java.time.LocalTime.now()
+                TimePickerDialog(
+                    contexto,
+                    { _, horaElegida, minutoElegido ->
+                        val elegida = "%02d:%02d".format(horaElegida, minutoElegido)
+                        val error = HorarioRetiro.validarHoraPersonalizada(elegida)
+                        errorHora = error
+                        if (error == null) {
+                            viewModel.actualizarHoraRetiro(elegida)
+                        }
+                    },
+                    ahora.hour,
+                    ahora.minute,
+                    true // formato 24 hrs
+                ).show()
+            },
+            border = BorderStroke(1.dp, JoJoNaranjo),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = JoJoNaranjo),
+            contentPadding = PaddingValues(vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "🕐 Elegir hora personalizada",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        errorHora?.let { mensaje ->
+            Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+        }
+
         BotonContinuarHora(
             horaSeleccionada = horaSeleccionada,
-            habilitado = horaSeleccionada in horasDisponibles,
+            // Válida si viene de la grilla O si pasó la validación de la
+            // hora personalizada elegida con el TimePicker nativo.
+            habilitado = horaSeleccionada in horasDisponibles ||
+                HorarioRetiro.validarHoraPersonalizada(horaSeleccionada) == null,
             onClick = {
                 // FIX NAV: el plato se commitea AQUÍ (al confirmar la hora), no
                 // en el resumen. El guard de agregarPlatoAlCarrito() (platoCompleto)

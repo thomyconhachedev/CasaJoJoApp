@@ -31,6 +31,31 @@ object HorarioRetiro {
     fun rangoVisible(): String = "${HORA_INICIO} y ${HORA_FIN}"
 
     /**
+     * Valida una hora elegida con el TimePicker NATIVO (fuera de la grilla
+     * de 10 minutos). Devuelve el mensaje de error o null si es válida:
+     * debe caer dentro de la ventana de servicio y respetar la
+     * anticipación mínima exigida por el backend.
+     */
+    fun validarHoraPersonalizada(
+        hora: String,
+        ahora: LocalDateTime = LocalDateTime.now()
+    ): String? {
+        val elegida = try {
+            LocalTime.parse(hora)
+        } catch (_: java.time.format.DateTimeParseException) {
+            return "Hora inválida."
+        }
+        if (elegida.isBefore(HORA_INICIO) || elegida.isAfter(HORA_FIN)) {
+            return "El retiro funciona entre ${HORA_INICIO} y ${HORA_FIN}."
+        }
+        val elegidaHoy = LocalDateTime.of(ahora.toLocalDate(), elegida)
+        if (elegidaHoy.isBefore(ahora.plusMinutes(ANTICIPACION_MINIMA_MINUTOS))) {
+            return "Elige al menos ${ANTICIPACION_MINIMA_MINUTOS} minutos de anticipación."
+        }
+        return null
+    }
+
+    /**
      * Genera los slots de hoy cada 10 minutos, descartando los que el
      * backend rechazaria (< anticipación mínima). Compara por FECHA Y HORA
      * (LocalDateTime): asi, tras las 22:00 no se listan slots pasados del dia
