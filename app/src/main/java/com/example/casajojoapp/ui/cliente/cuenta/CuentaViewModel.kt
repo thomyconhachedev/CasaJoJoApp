@@ -58,12 +58,33 @@ class CuentaViewModel : ViewModel() {
     fun guardar(nombre: String, telefono: String) {
         val nombreLimpio = nombre.trim()
         val telefonoLimpio = telefono.trim()
-        if (nombreLimpio.isBlank() || telefonoLimpio.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "El nombre y el teléfono no pueden estar vacíos.")
+        val digitos = telefonoLimpio.count { it.isDigit() }
+
+        // VALIDACIONES INLINE (IE 2.1.2): se calculan aquí, en el ViewModel,
+        // y se pintan en la UI campo por campo con ícono de advertencia.
+        val errorN = if (nombreLimpio.isBlank()) "Ingresa tu nombre" else null
+        val errorT = when {
+            telefonoLimpio.isBlank() -> "Ingresa tu teléfono"
+            digitos < 8 -> "Mínimo 8 dígitos (+56 9 1234 5678)"
+            else -> null
+        }
+        if (errorN != null || errorT != null) {
+            _uiState.value = _uiState.value.copy(
+                errorNombre = errorN,
+                errorTelefono = errorT,
+                error = null
+            )
             return
         }
+
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null, mensajeExito = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                error = null,
+                mensajeExito = null,
+                errorNombre = null,
+                errorTelefono = null
+            )
             if (_uiState.value.sesionIniciada) {
                 when (val resultado = authRepository.actualizarPerfil(nombreLimpio, telefonoLimpio)) {
                     is ResultadoAuth.Exito -> _uiState.value = _uiState.value.copy(
@@ -107,5 +128,18 @@ class CuentaViewModel : ViewModel() {
     fun cerrarSesion() {
         authRepository.cerrarSesion()
         cargarPerfil()
+    }
+
+    // Limpieza de errores inline al escribir en el campo correspondiente.
+    fun limpiarErrorNombre() {
+        if (_uiState.value.errorNombre != null) {
+            _uiState.value = _uiState.value.copy(errorNombre = null)
+        }
+    }
+
+    fun limpiarErrorTelefono() {
+        if (_uiState.value.errorTelefono != null) {
+            _uiState.value = _uiState.value.copy(errorTelefono = null)
+        }
     }
 }

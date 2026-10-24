@@ -106,12 +106,28 @@ fun PantallaLogin(
             }
         }
 
+        // Errores inline por campo: funciones puras del ViewModel (la
+        // validación está desacoplada de la UI, IE 2.2.1) que aquí solo se
+        // pintan con isError + supportingText + ícono de advertencia.
+        val errorUsuario = viewModel.errorUsername(uiState)
+        val errorContrasena = viewModel.errorPassword(uiState)
+        val errorConfirmacion = viewModel.errorConfirmacion(uiState)
+        val errorNombreCampo = viewModel.errorNombre(uiState)
+        val errorTelefonoCampo = viewModel.errorTelefono(uiState)
+
         OutlinedTextField(
             value = uiState.username,
             onValueChange = viewModel::actualizarUsername,
             label = { Text("Usuario") },
             singleLine = true,
             enabled = !uiState.isLoading,
+            isError = errorUsuario != null,
+            supportingText = if (errorUsuario != null) {
+                { Text(text = errorUsuario, fontSize = 12.sp, color = JoJoRojoClaro) }
+            } else null,
+            trailingIcon = if (errorUsuario != null) {
+                { Text(text = "⚠️", fontSize = 14.sp) }
+            } else null,
             colors = camposOscuros(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -122,6 +138,13 @@ fun PantallaLogin(
             label = { Text("Contraseña") },
             singleLine = true,
             enabled = !uiState.isLoading,
+            isError = errorContrasena != null,
+            supportingText = if (errorContrasena != null) {
+                { Text(text = errorContrasena, fontSize = 12.sp, color = JoJoRojoClaro) }
+            } else null,
+            trailingIcon = if (errorContrasena != null) {
+                { Text(text = "⚠️", fontSize = 14.sp) }
+            } else null,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             colors = camposOscuros(),
@@ -135,6 +158,13 @@ fun PantallaLogin(
                 label = { Text("Repite la contraseña") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
+                isError = errorConfirmacion != null,
+                supportingText = if (errorConfirmacion != null) {
+                    { Text(text = errorConfirmacion, fontSize = 12.sp, color = JoJoRojoClaro) }
+                } else null,
+                trailingIcon = if (errorConfirmacion != null) {
+                    { Text(text = "⚠️", fontSize = 14.sp) }
+                } else null,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = camposOscuros(),
@@ -146,6 +176,13 @@ fun PantallaLogin(
                 label = { Text("Nombre") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
+                isError = errorNombreCampo != null,
+                supportingText = if (errorNombreCampo != null) {
+                    { Text(text = errorNombreCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
+                } else null,
+                trailingIcon = if (errorNombreCampo != null) {
+                    { Text(text = "⚠️", fontSize = 14.sp) }
+                } else null,
                 colors = camposOscuros(),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -155,6 +192,13 @@ fun PantallaLogin(
                 label = { Text("Teléfono") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
+                isError = errorTelefonoCampo != null,
+                supportingText = if (errorTelefonoCampo != null) {
+                    { Text(text = errorTelefonoCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
+                } else null,
+                trailingIcon = if (errorTelefonoCampo != null) {
+                    { Text(text = "⚠️", fontSize = 14.sp) }
+                } else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 colors = camposOscuros(),
                 modifier = Modifier.fillMaxWidth()

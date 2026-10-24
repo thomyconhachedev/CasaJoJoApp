@@ -12,5 +12,9 @@ data class CuentaUiState(
     val telefono: String = "",
     val isLoading: Boolean = true,
     val error: String? = null,
+    // Errores inline por campo (IE 2.1.2): se calculan en el ViewModel
+    // al guardar y el usuario los ve desaparecer al corregir.
+    val errorNombre: String? = null,
+    val errorTelefono: String? = null,
     val mensajeExito: String? = null
 )

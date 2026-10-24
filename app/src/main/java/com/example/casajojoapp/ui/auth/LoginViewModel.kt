@@ -24,6 +24,9 @@ data class LoginUiState(
     val telefono: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
+    // true tras el primer intento de envío: habilita los errores inline
+    // por campo, que el usuario ve corregirse en vivo al escribir.
+    val enviado: Boolean = false,
     // Rol de la sesión recién iniciada; la UI navega cuando deja de ser null.
     val exitoRol: Rol? = null
 )
@@ -47,7 +50,11 @@ class LoginViewModel : ViewModel() {
     }
 
     fun cambiarModo(nuevo: ModoAuth) {
-        _uiState.value = _uiState.value.copy(modo = nuevo, error = null)
+        _uiState.value = _uiState.value.copy(
+            modo = nuevo,
+            error = null,
+            enviado = false // al cambiar de formulario se reinician los inline
+        )
     }
 
     fun actualizarUsername(valor: String) {
@@ -73,7 +80,19 @@ class LoginViewModel : ViewModel() {
     fun enviar() {
         val estado = _uiState.value
         viewModelScope.launch {
-            _uiState.value = estado.copy(isLoading = true, error = null)
+            _uiState.value = estado.copy(isLoading = true, error = null, enviado = true)
+
+            // VALIDACIÓN CRÍTICA: las dos contraseñas deben coincidir.
+            // (Antes se enviaba la confirmación sin compararla: si no
+            // coincidían, la cuenta se creaba con el campo equivocado.)
+            if (estado.modo == ModoAuth.REGISTRO && estado.password != estado.passwordConfirmacion) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Las contraseñas no coinciden."
+                )
+                return@launch
+            }
+
             val resultado = when (estado.modo) {
                 ModoAuth.LOGIN -> authRepository.iniciarSesion(estado.username, estado.password)
                 ModoAuth.REGISTRO -> authRepository.registrarse(
@@ -94,6 +113,41 @@ class LoginViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    // =========================================================
+    // ERRORES INLINE POR CAMPO (IE 2.1.2): funciones puras evaluadas en la
+    // UI a partir del estado — la validación vive aquí, no en el Composable.
+    // Solo aplican después del primer intento (enviado=true) y el usuario
+    // los ve desaparecer en vivo al corregir el campo.
+    // =========================================================
+    fun errorUsername(estado: LoginUiState): String? =
+        if (!estado.enviado) null
+        else if (estado.username.trim().length < 3) "Mínimo 3 caracteres"
+        else null
+
+    fun errorPassword(estado: LoginUiState): String? =
+        if (!estado.enviado) null
+        else if (estado.password.length < 6) "Mínimo 6 caracteres"
+        else null
+
+    fun errorConfirmacion(estado: LoginUiState): String? = when {
+        !estado.enviado || estado.modo == ModoAuth.LOGIN -> null
+        estado.passwordConfirmacion != estado.password -> "Las contraseñas no coinciden"
+        estado.passwordConfirmacion.length < 6 -> "Mínimo 6 caracteres"
+        else -> null
+    }
+
+    fun errorNombre(estado: LoginUiState): String? =
+        if (estado.enviado && estado.modo == ModoAuth.REGISTRO && estado.nombre.isBlank())
+            "Ingresa tu nombre"
+        else null
+
+    fun errorTelefono(estado: LoginUiState): String? {
+        if (!estado.enviado || estado.modo != ModoAuth.REGISTRO) return null
+        if (estado.telefono.isBlank()) return "Ingresa tu teléfono"
+        val digitos = estado.telefono.count { it.isDigit() }
+        return if (digitos < 8) "Mínimo 8 dígitos (+56 9 1234 5678)" else null
     }
 
     fun continuarComoInvitado() {
