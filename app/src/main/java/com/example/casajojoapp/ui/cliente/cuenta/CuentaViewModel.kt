@@ -92,6 +92,8 @@ class CuentaViewModel : ViewModel() {
                         telefono = telefonoLimpio,
                         mensajeExito = "Datos guardados en este dispositivo."
                     )
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

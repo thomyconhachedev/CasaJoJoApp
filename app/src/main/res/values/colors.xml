@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Debe coincidir con JoJoBlanco / JoJoNegro de ui/theme/Color.kt.
-         El tema de la ventana se resuelve antes de que exista Compose, asi que
-         estos dos hex se duplican a proposito para que no haya destello al abrir. -->
-    <color name="window_background">#FFFFFF</color>
+    <!-- La app FUERZA modo oscuro (Theme.kt), así que el fondo de la ventana
+         debe ser oscuro SIEMPRE: si fuera blanco, los usuarios con el sistema
+         en modo claro verían un destello blanco al abrir la app antes de que
+         Compose pinte el tema oscuro. -->
+    <color name="window_background">#1A1A1A</color>
 </resources>

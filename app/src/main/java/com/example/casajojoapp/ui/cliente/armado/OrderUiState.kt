@@ -22,14 +22,11 @@ data class OrderUiState(
     val acompanamientosDisponibles: List<Producto> = emptyList(),
     val ensaladasDisponibles: List<Producto> = emptyList(),
     val extrasDisponibles: List<Producto> = emptyList(),
-    val horaRetiroSeleccionada: String = "13:00", // CAMBIO HORARIO: default dentro del rango 12:00–16:00
+    val horaRetiroSeleccionada: String = "13:00", // CAMBIO HORARIO: default dentro del rango (ver util/HorarioRetiro)
     // CAMBIO CUENTAS: datos del cliente que viajan con el pedido. Se
-    // autocompletan desde el perfil local o se capturan como invitado.
+    // autocompletan desde la sesión o el perfil local (o se capturan como invitado).
     val clienteNombre: String = "",
     val clienteTelefono: String = "",
-    // CAMBIO RESTRICCIONES: las notas ahora son POR PLATO (PlatoArmado.notas).
-    // Este campo queda reservado para notas generales del pedido (futuro API).
-    val notasCliente: String = "",
     // ADMIN: pedidos ya enviados que quedan en la cola de admin, ordenados
     // por hora de retiro en PantallaAdmin.
     val pedidosEnviados: List<Pedido> = emptyList(),

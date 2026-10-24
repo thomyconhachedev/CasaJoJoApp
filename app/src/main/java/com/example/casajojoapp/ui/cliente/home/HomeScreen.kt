@@ -17,9 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -38,11 +35,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.casajojoapp.R
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.domain.model.Producto
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
@@ -109,7 +108,7 @@ fun HomeScreen(
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.AdminPanelSettings,
+                        painter = painterResource(id = R.drawable.ic_admin_panel),
                         contentDescription = "Panel de Administración",
                         modifier = Modifier.size(18.dp)
                     )
@@ -147,7 +146,7 @@ private fun EncabezadoHome() {
         Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.LocationOn,
+                painter = painterResource(id = R.drawable.ic_location),
                 contentDescription = "Ubicación",
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.secondary

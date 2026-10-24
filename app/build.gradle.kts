@@ -28,8 +28,10 @@ android {
 
     buildTypes {
         release {
+            // R8 activo: poda + ofusca (APK más liviano). Si algo falla,
+            // las reglas van en src/main/keepRules/rules.keep.
             optimization {
-                enable = false
+                enable = true
             }
         }
     }
@@ -53,10 +55,17 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Red (cliente HTTP contra el backend CasaJoJo).
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.gson)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -64,16 +73,4 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation("androidx.navigation:navigation-compose:2.10.2")
-    implementation("io.coil-kt:coil-compose:2.6.0")
-    // Retrofit (Cliente HTTP)
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    // Converter Gson para Retrofit (Convierte automáticamente JSON <-> Data Classes)
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    // Librería Gson nativa
-    implementation("com.google.code.gson:gson:2.11.0")
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // Iconos Material (AdminPanelSettings, LocationOn); versión la fija el BOM de Compose.
-    implementation("androidx.compose.material:material-icons-extended")
 }

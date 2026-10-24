@@ -31,9 +31,6 @@ interface ApiService {
     @GET("api/v1/pedidos")
     suspend fun listarPedidos(): List<PedidoResponseDto>
 
-    @GET("api/v1/pedidos/cola")
-    suspend fun listarColaCocina(): List<PedidoResponseDto>
-
     @PATCH("api/v1/pedidos/{id}/estado")
     suspend fun cambiarEstadoPedido(
         @Path("id") id: Long,
