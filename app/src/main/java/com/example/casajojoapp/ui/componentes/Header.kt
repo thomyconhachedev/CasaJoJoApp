@@ -11,6 +11,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,17 +25,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.casajojoapp.R
 
-// CAMBIO NAV: 
+// CAMBIO NAV / CAMBIO ROLES:
 // - Flecha "atras" (←) que vuelve al paso anterior (navigateUp) en cada
 //   vista del flujo. Se oculta en la home con mostrarAtras = false.
-// - El logo + nombre ahora son clickeables y llevan a la vista principal
-//   (home, la pantalla principal de la app). popUpTo(home) + launchSingleTop
-//   evitan apilar copias repetidas de home/cuenta al tocar varias veces.
+// - El logo + nombre llevan al home con popUpTo(home)+launchSingleTop para
+//   no apilar copias repetidas.
+// - Botón derecho según sesión: "Iniciar sesión" (invitado) o "Cuenta"
+//   (USUARIO/ADMIN). La sesión vive en ServicioLocator.authRepository.
 @Composable
 fun HeaderPrincipal(
     navController: NavController,
     mostrarAtras: Boolean = true
 ) {
+    val sesion by com.example.casajojoapp.data.ServicioLocator.authRepository.sesion.collectAsState()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -79,9 +84,15 @@ fun HeaderPrincipal(
         }
 
         Button(
-            onClick = { navController.navigate("cuenta") { launchSingleTop = true } }
+            onClick = {
+                if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) {
+                    navController.navigate("login") { launchSingleTop = true }
+                } else {
+                    navController.navigate("cuenta") { launchSingleTop = true }
+                }
+            }
         ) {
-            Text("Cuenta")
+            Text(if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) "Ingresar" else "Cuenta")
         }
     }
 }

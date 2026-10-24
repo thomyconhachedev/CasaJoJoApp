@@ -1,23 +1,25 @@
 package com.example.casajojoapp.ui.cliente.cuenta
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.casajojoapp.data.local.AppDatabase
+import com.example.casajojoapp.data.ServicioLocator
+import com.example.casajojoapp.data.repository.AuthRepository
 import com.example.casajojoapp.data.repository.ClienteRepository
-import com.example.casajojoapp.data.repository.ClienteRepositoryImpl
+import com.example.casajojoapp.data.repository.ResultadoAuth
 import com.example.casajojoapp.domain.model.Cliente
+import com.example.casajojoapp.domain.model.Rol
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// CAMBIO CUENTAS: gestiona el perfil local del cliente (Room, sin PIN).
-// AndroidViewModel para obtener el Context y construir la BD sin DI.
-class CuentaViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
+// CAMBIO ROLES: gestiona el perfil según la sesión:
+// - USUARIO/ADMIN -> actualiza su registro en la tabla usuarios.
+// - INVITADO -> perfil local de siempre (tabla clientes).
+class CuentaViewModel : ViewModel() {
 
-    private val repositorio: ClienteRepository =
-        ClienteRepositoryImpl(AppDatabase.obtener(aplicacion).clienteDao())
+    private val authRepository: AuthRepository = ServicioLocator.authRepository
+    private val clienteRepository: ClienteRepository = ServicioLocator.clienteRepository
 
     private val _uiState = MutableStateFlow(CuentaUiState())
     val uiState: StateFlow<CuentaUiState> = _uiState.asStateFlow()
@@ -29,44 +31,31 @@ class CuentaViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
     fun cargarPerfil() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            val cliente = repositorio.obtenerCliente()
-            _uiState.value = _uiState.value.copy(
-                perfilExiste = cliente != null,
-                nombre = cliente?.nombre.orEmpty(),
-                telefono = cliente?.telefono.orEmpty(),
-                isLoading = false
-            )
-        }
-    }
-
-    fun crearCuenta(nombre: String, telefono: String) {
-        val nombreLimpio = nombre.trim()
-        val telefonoLimpio = telefono.trim()
-        if (nombreLimpio.isBlank() || telefonoLimpio.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "Ingresa tu nombre y teléfono.")
-            return
-        }
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            try {
-                repositorio.guardar(nombreLimpio, telefonoLimpio)
-                _uiState.value = _uiState.value.copy(
+            val sesion = authRepository.sesion.value
+            if (sesion.rol != Rol.INVITADO) {
+                _uiState.value = CuentaUiState(
+                    sesionIniciada = true,
+                    username = sesion.username,
+                    rol = sesion.rol.name,
                     perfilExiste = true,
-                    nombre = nombreLimpio,
-                    telefono = telefonoLimpio,
-                    isLoading = false,
-                    mensajeExito = "Cuenta guardada. Ya puedes ordenar más rápido."
+                    nombre = sesion.nombre,
+                    telefono = sesion.telefono,
+                    isLoading = false
                 )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "No se pudo guardar la cuenta. Inténtalo de nuevo."
+            } else {
+                val cliente = clienteRepository.obtenerCliente()
+                _uiState.value = CuentaUiState(
+                    sesionIniciada = false,
+                    perfilExiste = cliente != null,
+                    nombre = cliente?.nombre.orEmpty(),
+                    telefono = cliente?.telefono.orEmpty(),
+                    isLoading = false
                 )
             }
         }
     }
 
-    fun actualizarPerfil(nombre: String, telefono: String) {
+    fun guardar(nombre: String, telefono: String) {
         val nombreLimpio = nombre.trim()
         val telefonoLimpio = telefono.trim()
         if (nombreLimpio.isBlank() || telefonoLimpio.isBlank()) {
@@ -74,44 +63,47 @@ class CuentaViewModel(aplicacion: Application) : AndroidViewModel(aplicacion) {
             return
         }
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            try {
-                repositorio.actualizar(Cliente(nombre = nombreLimpio, telefono = telefonoLimpio))
-                _uiState.value = _uiState.value.copy(
-                    nombre = nombreLimpio,
-                    telefono = telefonoLimpio,
-                    isLoading = false,
-                    mensajeExito = "Datos actualizados."
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "No se pudieron actualizar los datos."
-                )
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null, mensajeExito = null)
+            if (_uiState.value.sesionIniciada) {
+                when (val resultado = authRepository.actualizarPerfil(nombreLimpio, telefonoLimpio)) {
+                    is ResultadoAuth.Exito -> _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        nombre = nombreLimpio,
+                        telefono = telefonoLimpio,
+                        mensajeExito = "Datos actualizados."
+                    )
+                    is ResultadoAuth.Error -> _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = resultado.mensaje
+                    )
+                }
+            } else {
+                try {
+                    // Perfil de invitado: crear si no existe, actualizar si ya.
+                    if (_uiState.value.perfilExiste) {
+                        clienteRepository.actualizar(Cliente(nombre = nombreLimpio, telefono = telefonoLimpio))
+                    } else {
+                        clienteRepository.guardar(nombreLimpio, telefonoLimpio)
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        perfilExiste = true,
+                        isLoading = false,
+                        nombre = nombreLimpio,
+                        telefono = telefonoLimpio,
+                        mensajeExito = "Datos guardados en este dispositivo."
+                    )
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "No se pudieron guardar los datos. Inténtalo de nuevo."
+                    )
+                }
             }
         }
     }
 
-    fun eliminarCuenta() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            try {
-                repositorio.eliminar()
-                _uiState.value = CuentaUiState(
-                    isLoading = false,
-                    cuentaEliminada = true,
-                    mensajeExito = "Cuenta eliminada de este dispositivo."
-                )
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "No se pudo eliminar la cuenta."
-                )
-            }
-        }
-    }
-
-    fun limpiarMensajes() {
-        _uiState.value = _uiState.value.copy(error = null, mensajeExito = null)
+    fun cerrarSesion() {
+        authRepository.cerrarSesion()
+        cargarPerfil()
     }
 }

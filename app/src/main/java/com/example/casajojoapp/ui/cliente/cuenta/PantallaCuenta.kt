@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -25,8 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,10 +34,11 @@ import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
-// CAMBIO CUENTAS: pantalla de cuenta del cliente (perfil local, sin PIN).
-// Dos estados según CuentaUiState.perfilExiste:
-//  - Sin perfil: formulario de registro (nombre + teléfono).
-//  - Con perfil: ver/editar datos o eliminar la cuenta.
+// CAMBIO ROLES: pantalla de cuenta consciente de la sesión.
+// - Sesión USUARIO/ADMIN: muestra usuario+rol, edita sus datos y cierra
+//   sesión. La tabla "clientes" NO se toca (es el perfil de invitado).
+// - Invitado: perfil local de siempre (nombre/teléfono en este dispositivo)
+//   + invitación a crear cuenta/iniciar sesión.
 // =========================================================
 @Composable
 fun PantallaCuenta(
@@ -74,10 +74,15 @@ fun PantallaCuenta(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = if (uiState.perfilExiste) {
-                    "Tus datos se autocompletan al ordenar."
-                } else {
-                    "Guarda tus datos para ordenar más rápido."
+                text = when {
+                    uiState.sesionIniciada && uiState.rol == "ADMIN" ->
+                        "Sesión de administrador (@${uiState.username})."
+                    uiState.sesionIniciada ->
+                        "Sesión iniciada como @${uiState.username}. Tus datos se autocompletan al ordenar."
+                    uiState.perfilExiste ->
+                        "Tus datos se autocompletan al ordenar (perfil de invitado, en este dispositivo)."
+                    else ->
+                        "Guarda tus datos para ordenar más rápido. También puedes crear una cuenta."
                 },
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
@@ -107,19 +112,12 @@ fun PantallaCuenta(
             label = { Text("Teléfono") },
             singleLine = true,
             enabled = !uiState.isLoading,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             colors = camposOscuros(),
             modifier = Modifier.fillMaxWidth()
         )
 
         Button(
-            onClick = {
-                if (uiState.perfilExiste) {
-                    viewModel.actualizarPerfil(nombre, telefono)
-                } else {
-                    viewModel.crearCuenta(nombre, telefono)
-                }
-            },
+            onClick = { viewModel.guardar(nombre, telefono) },
             enabled = !uiState.isLoading,
             colors = ButtonDefaults.buttonColors(
                 containerColor = JoJoNaranjo,
@@ -133,21 +131,41 @@ fun PantallaCuenta(
             Text(
                 text = when {
                     uiState.isLoading -> "Guardando..."
+                    uiState.sesionIniciada -> "Guardar cambios"
                     uiState.perfilExiste -> "Guardar cambios"
-                    else -> "Guardar cuenta"
+                    else -> "Guardar en este dispositivo"
                 },
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
         }
 
-        if (uiState.perfilExiste) {
+        if (uiState.sesionIniciada) {
+            OutlinedButton(
+                onClick = {
+                    viewModel.cerrarSesion()
+                    navController.navigate("home") {
+                        popUpTo("home")
+                        launchSingleTop = true
+                    }
+                },
+                enabled = !uiState.isLoading,
+                contentPadding = PaddingValues(vertical = 16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Cerrar sesión", color = JoJoRojoClaro, fontSize = 15.sp)
+            }
+        } else {
             TextButton(
-                onClick = { viewModel.eliminarCuenta() },
+                onClick = { navController.navigate("login") { launchSingleTop = true } },
                 enabled = !uiState.isLoading,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Eliminar cuenta de este dispositivo", color = JoJoRojoClaro)
+                Text(
+                    text = "¿Quieres guardar tu cuenta en cualquier dispositivo? Inicia sesión o créala",
+                    color = JoJoNaranjo,
+                    fontSize = 13.sp
+                )
             }
         }
     }

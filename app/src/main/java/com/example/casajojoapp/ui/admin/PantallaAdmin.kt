@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -125,6 +127,9 @@ fun PantallaAdmin(
 
         uiState.errorMessage?.let { mensaje ->
             Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
+            TextButton(onClick = { viewModel.cargarPedidos() }) {
+                Text(text = "Reintentar", color = JoJoNaranjo, fontSize = 13.sp)
+            }
         }
 
         if (pedidosEnCola.isEmpty()) {
@@ -170,11 +175,13 @@ private fun SeccionModoDatos(
     menuError: String?,
     menuMensajeExito: String?,
     onCambioModo: (ModoDatos) -> Unit,
-    onCambioBaseUrl: (String) -> Unit,
+    onCambioBaseUrl: (String) -> Boolean,
     onRefrescarMenu: () -> Unit
 ) {
     // Estado local del campo URL: se resetea cuando cambia la URL guardada.
     var urlInput by remember(baseUrl) { mutableStateOf(baseUrl) }
+    // Error de validación del último intento de cambiar la URL.
+    var urlError by remember { mutableStateOf<String?>(null) }
 
     Card(
         shape = RoundedCornerShape(14.dp),
@@ -248,7 +255,15 @@ private fun SeccionModoDatos(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
-                        onClick = { onCambioBaseUrl(urlInput.trim()) },
+                        onClick = {
+                            // Cambio URL: si el formato es inválido se avisa y
+                            // NO se pisa la URL anterior (ModoDatosRepository).
+                            urlError = if (onCambioBaseUrl(urlInput.trim())) {
+                                null
+                            } else {
+                                "URL inválida: debe empezar con http:// o https://"
+                            }
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = JoJoNaranjo,
                             contentColor = Color.Black
@@ -257,6 +272,9 @@ private fun SeccionModoDatos(
                     ) {
                         Text(text = "Aplicar", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
+                }
+                urlError?.let { mensaje ->
+                    Text(text = mensaje, color = JoJoRojoClaro, fontSize = 12.sp)
                 }
             }
 
@@ -486,5 +504,49 @@ private fun FilaAdmin(etiqueta: String, valor: String) {
             color = Color.White,
             fontSize = 14.sp
         )
+    }
+}
+
+// CAMBIO ROLES: gate del panel. Sin sesión ADMIN se ofrece ir al login
+// (con origenAdmin para exigir una cuenta de administrador).
+@Composable
+fun AccesoRestringidoAdmin(navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(JoJoFondoApp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        HeaderPrincipal(navController)
+        Spacer(modifier = Modifier.height(32.dp))
+        Text(
+            text = "Panel de administración",
+            color = Color.White,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Esta sección es solo para cuentas de administrador.\nInicia sesión con una cuenta admin para ver la cola de cocina.",
+            color = JoJoTextoSecundario,
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center
+        )
+        Button(
+            onClick = {
+                navController.navigate("login?origenAdmin=true") {
+                    launchSingleTop = true
+                }
+            },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = JoJoNaranjo,
+                contentColor = Color.Black
+            ),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Iniciar sesión como administrador", fontWeight = FontWeight.Bold)
+        }
     }
 }

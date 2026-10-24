@@ -65,9 +65,9 @@ fun PedidoResponseDto.aDominio(): Pedido = Pedido(
 // Pedido (dominio) -> CrearPedidoRequest (body del POST /api/v1/pedidos).
 // Aplana los platos en ítems con itemMenuId/cantidad; los precios NO viajan
 // porque el backend los toma de su propio menú.
-// Ahora enviamos la observación POR PLATO en cada ítem de ese plato.
+// CAMBIO ROLES: usuarioId se envía solo cuando hay sesión (null = invitado).
 fun Pedido.aRequestDto(): CrearPedidoRequestDto = CrearPedidoRequestDto(
-    usuarioId = null,
+    usuarioId = usuarioId,
     nombreCliente = clienteNombre,
     telefonoContacto = clienteTelefono.ifBlank { null },
     horaRetiroSolicitada = horaRetiro,

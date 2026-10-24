@@ -6,20 +6,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.casajojoapp.domain.model.Rol
+import com.example.casajojoapp.ui.admin.AccesoRestringidoAdmin
+import com.example.casajojoapp.ui.admin.PantallaAdmin
+import com.example.casajojoapp.ui.auth.PantallaLogin
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.cliente.armado.ResumenPlatoScreen
 import com.example.casajojoapp.ui.cliente.armado.SeleccionAcompanamientosSC
@@ -31,7 +33,6 @@ import com.example.casajojoapp.ui.cliente.carrito.carritoSC
 import com.example.casajojoapp.ui.cliente.cuenta.PantallaCuenta
 import com.example.casajojoapp.ui.cliente.home.HomeScreen
 import com.example.casajojoapp.ui.theme.CasaJoJoAppTheme
-import com.example.casajojoapp.ui.admin.PantallaAdmin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,11 +61,9 @@ class MainActivity : ComponentActivity() {
                         composable("home") {
                             HomeScreen(navController = navController, viewModel = orderViewModel)
                         }
-                        // CAMBIO MVVM (sección 3): la MISMA instancia de OrderViewModel
-                        // creada arriba con viewModel() se inyecta en cada ruta del
-                        // flujo de armado para que compartan un único estado global.
-                        // CAMBIO FLUJO (5 pasos): Proteína -> Acompañamientos(2)
-                        // -> Ensalada -> Postres/Bebidas (opcionales) -> Resumen
+                        // La MISMA instancia de OrderViewModel creada arriba se
+                        // inyecta en cada ruta del flujo de armado para que
+                        // compartan un único estado global.
                         composable("seleccionProteinaSC") {
                             SeleccionProteinaSC(navController, viewModel = orderViewModel)
                         }
@@ -80,25 +79,44 @@ class MainActivity : ComponentActivity() {
                         composable("resumen_plato") {
                             ResumenPlatoScreen(navController = navController, viewModel = orderViewModel)
                         }
-                        // CAMBIO HORARIO: selector de hora de retiro (12:00–16:00
-                        // cada 10 min) entre el Resumen y el Carrito
+                        // Selector de hora de retiro (12:00–22:00 TEMPORAL de
+                        // pruebas; ver util/HorarioRetiro) entre Resumen y Carrito.
                         composable("horaRetiroSC") {
                             SeleccionarHoraRetiroSC(navController = navController, viewModel = orderViewModel)
                         }
                         composable("carritoSC") {
                             carritoSC(navController = navController, viewModel = orderViewModel)
                         }
-                        // CAMBIO CUENTAS: pantalla de perfil local del cliente
-                        // (registro / editar / eliminar). Se accede desde el Header.
+                        // CAMBIO CUENTAS: perfil según sesión (cuenta o invitado).
                         composable("cuenta") {
                             PantallaCuenta(navController = navController)
                         }
-                        // ADMIN: cola de pedidos enviados, ordenados por hora de retiro.
-                        composable("admin") {
-                            PantallaAdmin(
-                                navController = navController,
-                                viewModel = orderViewModel
+                        // CAMBIO ROLES: login/registro con "origenAdmin" opcional
+                        // (el panel exige cuenta de administrador).
+                        composable(
+                            route = "login?origenAdmin={origenAdmin}",
+                            arguments = listOf(
+                                navArgument("origenAdmin") {
+                                    type = NavType.BoolType
+                                    defaultValue = false
+                                }
                             )
+                        ) { entrada ->
+                            val origenAdmin = entrada.arguments?.getBoolean("origenAdmin") ?: false
+                            PantallaLogin(navController = navController, origenAdmin = origenAdmin)
+                        }
+                        // CAMBIO ROLES: cola de pedidos SOLO para sesión ADMIN;
+                        // sin ella se muestra el gate de acceso.
+                        composable("admin") {
+                            val sesion by orderViewModel.sesion.collectAsState()
+                            if (sesion.rol == Rol.ADMIN) {
+                                PantallaAdmin(
+                                    navController = navController,
+                                    viewModel = orderViewModel
+                                )
+                            } else {
+                                AccesoRestringidoAdmin(navController = navController)
+                            }
                         }
                     }
                 }
@@ -106,4 +124,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

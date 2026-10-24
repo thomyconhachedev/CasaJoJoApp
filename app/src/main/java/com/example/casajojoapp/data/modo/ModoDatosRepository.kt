@@ -29,9 +29,16 @@ class ModoDatosRepository(context: Context) {
         prefs.edit { putString(CLAVE_MODO, nuevo.name) }
     }
 
-    fun cambiarBaseUrl(nueva: String) {
-        _baseUrl.value = normalizar(nueva.trim().ifBlank { BuildConfig.BASE_URL })
-        prefs.edit { putString(CLAVE_BASE_URL, _baseUrl.value) }
+    // CAMBIO URL: valida el esquema antes de persistir. Devuelve false si la
+    // URL es inválida (no http/https) y conserva la anterior.
+    fun cambiarBaseUrl(nueva: String): Boolean {
+        val candidata = nueva.trim().ifBlank { BuildConfig.BASE_URL }
+        val normalizada = normalizar(candidata)
+        val esValida = normalizada.startsWith("http://") || normalizada.startsWith("https://")
+        if (!esValida) return false
+        _baseUrl.value = normalizada
+        prefs.edit { putString(CLAVE_BASE_URL, normalizada) }
+        return true
     }
 
     private fun cargarModo(): ModoDatos {

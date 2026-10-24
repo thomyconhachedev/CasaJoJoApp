@@ -17,7 +17,10 @@ data class Pedido(
     val estado: EstadoPedido = EstadoPedido.RECIBIDO,
     val codigoSeguimiento: String? = null,
     // Líneas planas devueltas por el backend (vacío en modo LOCAL).
-    val detalles: List<LineaDetallePedido> = emptyList()
+    val detalles: List<LineaDetallePedido> = emptyList(),
+    // CAMBIO ROLES: cuenta del pedido cuando hay sesión USUARIO/ADMIN;
+    // null = pedido de invitado.
+    val usuarioId: Long? = null
 ) {
     /** Unidades a preparar: platos armados en local, suma de cantidades en API. */
     val unidades: Int

@@ -1,16 +1,15 @@
 package com.example.casajojoapp.ui.cliente.armado
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.casajojoapp.data.local.AppDatabase
+import com.example.casajojoapp.data.ServicioLocator
 import com.example.casajojoapp.data.modo.ModoDatos
 import com.example.casajojoapp.data.modo.ModoDatosRepository
 import com.example.casajojoapp.data.remote.ApiError
 import com.example.casajojoapp.data.remote.ApiService
 import com.example.casajojoapp.data.remote.NetworkModule
+import com.example.casajojoapp.data.repository.AuthRepository
 import com.example.casajojoapp.data.repository.ClienteRepository
-import com.example.casajojoapp.data.repository.ClienteRepositoryImpl
 import com.example.casajojoapp.data.repository.PedidoRepository
 import com.example.casajojoapp.data.repository.PedidoRepositoryApi
 import com.example.casajojoapp.data.repository.PedidoRepositoryLocal
@@ -24,38 +23,37 @@ import com.example.casajojoapp.domain.model.EstadoPedido
 import com.example.casajojoapp.domain.model.Pedido
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.domain.model.Producto
+import com.example.casajojoapp.domain.model.Rol
+import com.example.casajojoapp.domain.model.Sesion
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 // =========================================================
-// OrderViewModel (AndroidViewModel): necesita Application para construir
-// ModoDatosRepository (SharedPreferences) y el repositorio de pedidos.
+// OrderViewModel: estado global del pedido (armado + carrito + cola admin).
+// - Las dependencias vienen de ServicioLocator (instancias únicas: la
+//   sesión y el modo de datos se ven en TODAS las pantallas).
 // - MODO DE DATOS (LOCAL/API) en runtime, persistido en SharedPreferences.
-// - Cola de pedidos (admin) cargada desde el repositorio vigente.
-// - enviarPedido()/actualizarEstadoPedido() delegan al repositorio.
-// El menu de armado sigue hardcodeado en las pantallas (se cableara en la
-// Fase 3); aqui solo viajan como Producto ya mapeados.
+// - enviarPedido()/actualizarEstadoPedido() delegan al repositorio vigente.
 // =========================================================
-class OrderViewModel(application: Application) : AndroidViewModel(application) {
+class OrderViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
     val uiState: StateFlow<OrderUiState> = _uiState.asStateFlow()
 
     // MODO DE DATOS (LOCAL / API) + BASE_URL, persistidos en SharedPreferences.
-    private val modoDatosRepository = ModoDatosRepository(application)
+    private val modoDatosRepository: ModoDatosRepository = ServicioLocator.modoDatos
     val modoDatos: StateFlow<ModoDatos> = modoDatosRepository.modo
     val baseUrl: StateFlow<String> = modoDatosRepository.baseUrl
 
-    // Cola en memoria (implementación LOCAL por defecto). NO se persiste:
-    // se pierde al reiniciar la app.
-    private val pedidoRepositoryLocal = PedidoRepositoryLocal()
+    // CAMBIO ROLES: sesión vigente compartida (INVITADO/USUARIO/ADMIN).
+    val sesion: StateFlow<Sesion> = ServicioLocator.authRepository.sesion
 
-    // Perfil local (Room) del cliente: aporta nombre y teléfono al pedido
-    // cuando la pantalla de Cuenta ya los guardó.
-    private val clienteRepository: ClienteRepository =
-        ClienteRepositoryImpl(AppDatabase.obtener(application).clienteDao())
+    private val pedidoRepositoryLocal: PedidoRepositoryLocal = ServicioLocator.pedidoRepositoryLocal
+    private val clienteRepository: ClienteRepository = ServicioLocator.clienteRepository
+    private val authRepository: AuthRepository = ServicioLocator.authRepository
 
     // Cache del ApiService: solo se recrea cuando cambia la BASE_URL.
     private var apiCache: Pair<String, ApiService>? = null
@@ -63,47 +61,52 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
     // Selector del repositorio de pedidos según el modo vigente.
     private fun pedidoRepository(): PedidoRepository = when (modoDatosRepository.modo.value) {
         ModoDatos.LOCAL -> pedidoRepositoryLocal
-        ModoDatos.API -> {
-            val url = modoDatosRepository.baseUrl.value
-            val api = if (apiCache?.first == url) {
-                apiCache!!.second
-            } else {
-                NetworkModule.crearApiService(url).also { apiCache = url to it }
-            }
-            PedidoRepositoryApi(api)
-        }
+        ModoDatos.API -> PedidoRepositoryApi(apiServiceVigente())
     }
 
     // Selector del repositorio de MENÚ (reutiliza el mismo cache de ApiService).
     private fun menuRepository(): MenuRepository = when (modoDatosRepository.modo.value) {
         ModoDatos.LOCAL -> MenuRepositoryLocal()
-        ModoDatos.API -> {
-            val url = modoDatosRepository.baseUrl.value
-            val api = if (apiCache?.first == url) {
-                apiCache!!.second
-            } else {
-                NetworkModule.crearApiService(url).also { apiCache = url to it }
-            }
-            MenuRepositoryApi(api)
+        ModoDatos.API -> MenuRepositoryApi(apiServiceVigente())
+    }
+
+    private fun apiServiceVigente(): ApiService {
+        val url = modoDatosRepository.baseUrl.value
+        val cacheado = apiCache?.first == url
+        return if (cacheado) {
+            apiCache!!.second
+        } else {
+            NetworkModule.crearApiService(url).also { apiCache = url to it }
         }
     }
 
     init {
-        // Carga inicial: menú (LOCAL o API), cola de pedidos y perfil local.
+        // Restaura la sesión persistida (la construye AuthRepositoryLocal) y
+        // carga menú + cola + datos de contacto del perfil vigente.
+        viewModelScope.launch {
+            (authRepository as? com.example.casajojoapp.data.repository.AuthRepositoryLocal)
+                ?.restaurarSesionPrevia()
+            cargarDatosClienteGuardados()
+        }
         cargarMenu()
         cargarPedidos()
-        cargarDatosClienteGuardados()
     }
 
-    // Autocompleta nombre y teléfono desde el perfil de Room si aún no hay
-    // datos en el estado (el backend exige nombreCliente para crear el pedido).
+    // Autocompleta nombre y teléfono desde la sesión (USUARIO/ADMIN) o el
+    // perfil local de invitado si aún no hay datos en el estado.
     private fun cargarDatosClienteGuardados() {
         viewModelScope.launch {
-            val perfil = clienteRepository.obtenerCliente() ?: return@launch
+            val sesionActual = authRepository.sesion.value
+            val perfil = if (sesionActual.rol == Rol.INVITADO) {
+                clienteRepository.obtenerCliente()
+            } else null
+            val nombreSugerido = sesionActual.nombre.ifBlank { perfil?.nombre.orEmpty() }
+            val telefonoSugerido = sesionActual.telefono.ifBlank { perfil?.telefono.orEmpty() }
+            if (nombreSugerido.isBlank() && telefonoSugerido.isBlank()) return@launch
             val actual = _uiState.value
             _uiState.value = actual.copy(
-                clienteNombre = actual.clienteNombre.ifBlank { perfil.nombre },
-                clienteTelefono = actual.clienteTelefono.ifBlank { perfil.telefono }
+                clienteNombre = actual.clienteNombre.ifBlank { nombreSugerido },
+                clienteTelefono = actual.clienteTelefono.ifBlank { telefonoSugerido }
             )
         }
     }
@@ -129,6 +132,8 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                     extrasDisponibles = productos.extras(),
                     menuMensajeExito = "Menú refrescado con éxito (${productos.size} productos)."
                 )
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoadingMenu = false,
@@ -212,7 +217,7 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.value = _uiState.value.copy(horaRetiroSeleccionada = hora)
     }
 
-    // Datos del cliente (perfil o invitado) que viajan con el pedido.
+    // Datos del cliente (sesión, perfil o invitado) que viajan con el pedido.
     fun actualizarDatosCliente(nombre: String, telefono: String) {
         _uiState.value = _uiState.value.copy(
             clienteNombre = nombre.trim(),
@@ -237,15 +242,21 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            // El backend exige nombreCliente: si el estado no lo trae, se toma
-            // del perfil local (Room) para no bloquear el pedido.
+            // CAMBIO ROLES: orden de preferencia de contacto:
+            // 1) lo que el usuario escribió en el estado,
+            // 2) la sesión (USUARIO/ADMIN), 3) el perfil de invitado.
+            val sesionActual = authRepository.sesion.value
             val perfil = clienteRepository.obtenerCliente()
-            val nombre = estado.clienteNombre.trim().ifBlank { perfil?.nombre.orEmpty().trim() }
-            val telefono = estado.clienteTelefono.trim().ifBlank { perfil?.telefono.orEmpty().trim() }
+            val nombre = estado.clienteNombre.trim()
+                .ifBlank { sesionActual.nombre.trim() }
+                .ifBlank { perfil?.nombre.orEmpty().trim() }
+            val telefono = estado.clienteTelefono.trim()
+                .ifBlank { sesionActual.telefono.trim() }
+                .ifBlank { perfil?.telefono.orEmpty().trim() }
             if (nombre.isBlank() || telefono.isBlank()) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Faltan tus datos de contacto. Créalos en Mi Cuenta."
+                    errorMessage = "Faltan tus datos de contacto. Créalos en Mi Cuenta o inicia sesión."
                 )
                 return@launch
             }
@@ -257,7 +268,10 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                 horaRetiro = estado.horaRetiroSeleccionada,
                 platos = estado.carritoPlatos,
                 total = estado.carritoPlatos.sumOf { it.precioTotal },
-                notasRestricciones = notas
+                notasRestricciones = notas,
+                // CAMBIO ROLES: los pedidos de cuentas quedan asociadas;
+                // los de invitados viajan sin usuarioId (como hasta ahora).
+                usuarioId = sesionActual.usuarioId
             )
 
             try {
@@ -269,6 +283,8 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                     carritoPlatos = emptyList()
                 )
                 cargarPedidos() // refresca la cola de admin desde el repositorio
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -280,15 +296,23 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
 
     // =========================================================
     // ADMIN: carga la cola desde el repositorio vigente (LOCAL o API).
+    // En modo API con el backend caído se DEGRADA a la cola local y lo
+    // avisa, para que el panel nunca quede mudo en una demo.
     // =========================================================
     fun cargarPedidos() {
         viewModelScope.launch {
             try {
                 val lista = pedidoRepository().listarPedidos()
-                _uiState.value = _uiState.value.copy(pedidosEnviados = lista)
+                _uiState.value = _uiState.value.copy(pedidosEnviados = lista, errorMessage = null)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                val colaLocal = if (modoDatosRepository.modo.value == ModoDatos.API) {
+                    pedidoRepositoryLocal.listarPedidos()
+                } else emptyList()
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = "No se pudo cargar la cola: ${ApiError.mensaje(e)}"
+                    pedidosEnviados = colaLocal,
+                    errorMessage = "Backend no disponible: ${ApiError.mensaje(e)}"
                 )
             }
         }
@@ -300,6 +324,8 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 pedidoRepository().cambiarEstado(id, nuevoEstado)
                 cargarPedidos()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     errorMessage = "No se pudo cambiar el estado: ${ApiError.mensaje(e)}"
@@ -315,9 +341,10 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
         cargarPedidos()
     }
 
-    // URL del backend (panel Admin). Al aplicar en modo API, recarga la cola.
-    fun cambiarBaseUrl(nueva: String) {
-        modoDatosRepository.cambiarBaseUrl(nueva)
-        if (modoDatosRepository.modo.value == ModoDatos.API) cargarPedidos()
+    // URL del backend (panel Admin). Devuelve false si el formato es inválido.
+    fun cambiarBaseUrl(nueva: String): Boolean {
+        val aplicada = modoDatosRepository.cambiarBaseUrl(nueva.trim())
+        if (aplicada && modoDatosRepository.modo.value == ModoDatos.API) cargarPedidos()
+        return aplicada
     }
 }

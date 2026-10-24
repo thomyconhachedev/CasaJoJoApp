@@ -95,26 +95,30 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Acceso admin discreto al final de la pantalla.
-            OutlinedButton(
-                onClick = { navController.navigate("admin") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AdminPanelSettings,
-                    contentDescription = "Panel de Administración",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Acceso Panel Administrador",
-                    style = MaterialTheme.typography.labelLarge
-                )
+            // Acceso admin discreto: SOLO visible con sesión de administrador
+            // (CAMBIO ROLES). Para clientes no existe el botón.
+            val sesion by viewModel.sesion.collectAsState()
+            if (sesion.rol == com.example.casajojoapp.domain.model.Rol.ADMIN) {
+                OutlinedButton(
+                    onClick = { navController.navigate("admin") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = "Panel de Administración",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Acceso Panel Administrador",
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
             }
         }
     }
