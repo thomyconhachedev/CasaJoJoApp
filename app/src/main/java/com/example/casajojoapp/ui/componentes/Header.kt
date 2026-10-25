@@ -32,10 +32,15 @@ import com.example.casajojoapp.R
 //   no apilar copias repetidas.
 // - Botón derecho según sesión: "Iniciar sesión" (invitado) o "Cuenta"
 //   (USUARIO/ADMIN). La sesión vive en ServicioLocator.authRepository.
+// - mostrarBotonCuenta = false: las pantallas de SELECCIÓN (proteína,
+//   acompañamientos, ensalada, extras y hora de retiro) muestran SOLO la
+//   flecha + "La Casa JoJo" alineados a la izquierda (la navegación de
+//   esas pantallas vive en la barra inferior, que tampoco se muestra ahí).
 @Composable
 fun HeaderPrincipal(
     navController: NavController,
-    mostrarAtras: Boolean = true
+    mostrarAtras: Boolean = true,
+    mostrarBotonCuenta: Boolean = true
 ) {
     val sesion by com.example.casajojoapp.data.ServicioLocator.authRepository.sesion.collectAsState()
 
@@ -43,7 +48,11 @@ fun HeaderPrincipal(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = if (mostrarBotonCuenta) {
+            Arrangement.SpaceBetween
+        } else {
+            Arrangement.Start // todo el contenido agrupado a la izquierda
+        },
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (mostrarAtras) {
@@ -83,16 +92,18 @@ fun HeaderPrincipal(
             )
         }
 
-        Button(
-            onClick = {
-                if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) {
-                    navController.navigate("login") { launchSingleTop = true }
-                } else {
-                    navController.navigate("cuenta") { launchSingleTop = true }
+        if (mostrarBotonCuenta) {
+            Button(
+                onClick = {
+                    if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) {
+                        navController.navigate("login") { launchSingleTop = true }
+                    } else {
+                        navController.navigate("cuenta") { launchSingleTop = true }
+                    }
                 }
+            ) {
+                Text(if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) "Ingresar" else "Cuenta")
             }
-        ) {
-            Text(if (sesion.rol == com.example.casajojoapp.domain.model.Rol.INVITADO) "Ingresar" else "Cuenta")
         }
     }
 }

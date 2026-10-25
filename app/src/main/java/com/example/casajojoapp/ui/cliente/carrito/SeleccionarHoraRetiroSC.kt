@@ -68,7 +68,7 @@ fun SeleccionarHoraRetiroSC(navController: NavController, viewModel: OrderViewMo
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        HeaderPrincipal(navController)
+        HeaderPrincipal(navController, mostrarBotonCuenta = false)
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(

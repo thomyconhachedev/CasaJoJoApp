@@ -75,7 +75,7 @@ fun SeleccionAcompanamientosSC(navController: NavController, viewModel: OrderVie
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        HeaderPrincipal(navController)
+        HeaderPrincipal(navController, mostrarBotonCuenta = false)
 
         EncabezadoAcompanamientos()
 

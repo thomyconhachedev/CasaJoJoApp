@@ -81,19 +81,27 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // BARRA INFERIOR ESTÁTICA (3 botones cuadrados): visible solo
-                // en las pantallas top-level (home, pedidos, perfil). El
-                // flujo de armado y el login la ocultan.
+                // BARRA INFERIOR ESTÁTICA (3 botones cuadrados): se ve en TODA
+                // la app SALVO en las pantallas de selección del flujo de
+                // armado (proteína, acompañamientos, ensalada, extras y hora
+                // de retiro), donde manda la flecha de volver del header.
                 val entrada by navController.currentBackStackEntryAsState()
                 val rutaActual = entrada?.destination?.route
-                val rutasConBarra = setOf("home", "pedidos", "cuenta")
+                val rutasSinBarra = setOf(
+                    "seleccionProteinaSC",
+                    "seleccionAcompanamientosSC",
+                    "seleccionEnsaladasSC",
+                    "postresBebidasSC",
+                    "horaRetiroSC"
+                )
+                val mostrarBarra = rutaActual != null && rutaActual !in rutasSinBarra
 
                 // Sin Scaffold el rol "background" del ColorScheme nunca se pinta y
                 // el Text resolveria contra LocalContentColor (negro fijo), no contra
                 // onSurface. El inner padding tambien aplica los insets del sistema.
                 Scaffold(
                     bottomBar = {
-                        if (rutaActual in rutasConBarra) {
+                        if (mostrarBarra) {
                             BarraInferior(
                                 navController = navController,
                                 rutaActual = rutaActual
