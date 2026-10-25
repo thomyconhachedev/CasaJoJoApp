@@ -31,7 +31,13 @@ class PedidoRepositoryLocal : PedidoRepository {
     override suspend fun listarPedidos(): List<Pedido> = pedidos.toList()
 
     override suspend fun crearPedido(pedido: Pedido): Pedido {
-        val pedidoConId = pedido.copy(id = secuenciaId.incrementAndGet())
+        val nuevoId = secuenciaId.incrementAndGet()
+        val pedidoConId = pedido.copy(
+            id = nuevoId,
+            // Código de seguimiento local (en modo API lo asigna el backend).
+            codigoSeguimiento = pedido.codigoSeguimiento
+                ?: "JOJO-%04d".format(nuevoId)
+        )
         pedidos.add(pedidoConId)
         return pedidoConId
     }

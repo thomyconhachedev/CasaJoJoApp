@@ -309,9 +309,10 @@ class OrderViewModel : ViewModel() {
                     carritoPlatos = emptyList()
                 )
                 // NOTIFICACIÓN: avisa a caja de que llegó una comanda nueva.
+                val codigoConfirmado = codigoDePedido(confirmado, confirmado.id)
                 com.example.casajojoapp.data.ServicioLocator.notificador.notificar(
                     id = notificacionId(confirmado.id),
-                    titulo = "Nueva comanda #${confirmado.id}",
+                    titulo = "Nueva comanda $codigoConfirmado",
                     texto = "Retiro a las ${confirmado.horaRetiro} · ${confirmado.clienteNombre}"
                 )
                 // RECORDATORIO LOCAL: aviso 5 minutos antes de la hora de
@@ -325,7 +326,7 @@ class OrderViewModel : ViewModel() {
                     com.example.casajojoapp.data.ServicioLocator.recordatorios.programar(
                         idPedido = confirmado.id,
                         momento = momentoAviso,
-                        titulo = "Tu retiro es a las ${confirmado.horaRetiro}",
+                        titulo = "Tu pedido $codigoConfirmado es a las ${confirmado.horaRetiro}",
                         texto = "Faltan 5 minutos para retirar tu pedido en La Casa JoJo."
                     )
                 }
@@ -377,16 +378,33 @@ class OrderViewModel : ViewModel() {
                 ) {
                     com.example.casajojoapp.data.ServicioLocator.recordatorios.cancelar(id)
                 }
-                // NOTIFICACIÓN LOCAL: el cliente en este dispositivo ve el
-                // cambio de estado (p. ej. "Listo para retiro").
+                // NOTIFICACIÓN LOCAL con el CÓDIGO del pedido (p. ej.
+                // "Tu pedido JOJO-0001 está listo para retiro").
+                val pedido = _uiState.value.pedidosEnviados.firstOrNull { it.id == id }
+                val codigo = codigoDePedido(pedido, id)
+                val titulo = when (nuevoEstado) {
+                    EstadoPedido.LISTO_PARA_RETIRO ->
+                        "Tu pedido $codigo está listo para retiro"
+                    EstadoPedido.CANCELADO ->
+                        "Tu pedido $codigo fue cancelado"
+                    else ->
+                        "Tu pedido $codigo → ${nuevoEstado.nombre}"
+                }
+                val texto = when (nuevoEstado) {
+                    EstadoPedido.LISTO_PARA_RETIRO -> {
+                        val hora = pedido?.horaRetiro?.takeIf { it.isNotBlank() }
+                        if (hora != null) "Retira tu pedido a las $hora en La Casa JoJo."
+                        else "Pasa por tu pedido en La Casa JoJo."
+                    }
+                    EstadoPedido.CANCELADO ->
+                        "Si tienes dudas, contáctanos directamente."
+                    else ->
+                        "Estado actualizado: ${nuevoEstado.nombre}."
+                }
                 com.example.casajojoapp.data.ServicioLocator.notificador.notificar(
                     id = notificacionId(id),
-                    titulo = "Comanda #$id",
-                    texto = if (nuevoEstado == EstadoPedido.LISTO_PARA_RETIRO) {
-                        "¡Listo para retiro! Pasa por tu pedido."
-                    } else {
-                        "Estado actualizado: ${nuevoEstado.nombre}"
-                    }
+                    titulo = titulo,
+                    texto = texto
                 )
                 cargarPedidos()
             } catch (e: CancellationException) {
@@ -404,6 +422,11 @@ class OrderViewModel : ViewModel() {
     private fun notificacionId(idPedido: Long): Int =
         if (idPedido in 1..Int.MAX_VALUE) idPedido.toInt()
         else (System.currentTimeMillis() % Int.MAX_VALUE).toInt()
+
+    // Código de seguimiento del pedido para los textos de notificación
+    // (JOJO-xxxx en local, el del backend en API, "#id" como respaldo).
+    private fun codigoDePedido(pedido: Pedido?, id: Long): String =
+        pedido?.codigoSeguimiento?.takeIf { it.isNotBlank() } ?: "#$id"
 
     // Interruptor LOCAL / API del panel Admin. Al cambiar, recarga menú y cola.
     fun cambiarModoDatos(nuevo: ModoDatos) {
