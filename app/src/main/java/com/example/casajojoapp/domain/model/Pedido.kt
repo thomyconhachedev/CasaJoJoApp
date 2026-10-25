@@ -34,5 +34,7 @@ data class LineaDetallePedido(
     val cantidad: Int,
     val precioUnitario: Double,
     // Restricción/observación de la línea (viene del backend en modo API).
-    val observacion: String? = null
+    val observacion: String? = null,
+    // Plato al que pertenece la línea (1..N); null con backends viejos.
+    val platoId: Int? = null
 )

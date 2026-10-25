@@ -22,5 +22,8 @@ data class DetallePedidoResponseDto(
     @SerializedName("nombreItem") val nombreItem: String,
     @SerializedName("cantidad") val cantidad: Int,
     @SerializedName("precioUnitario") val precioUnitario: Double,
-    @SerializedName("observacion") val observacion: String? = null
+    @SerializedName("observacion") val observacion: String? = null,
+    // CAMBIO PLATO ID: devuelto por el backend para reagrupar por plato
+    // (null con backends viejos => la app muestra las líneas planas).
+    @SerializedName("platoId") val platoId: Int? = null
 )

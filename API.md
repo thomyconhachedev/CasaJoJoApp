@@ -84,8 +84,8 @@ Body (`CrearPedidoRequestDto`):
   "horaRetiroSolicitada": "14:00",
   "observaciones": "Sin cebolla; sin gluten",
   "items": [
-    { "itemMenuId": 1, "cantidad": 1, "observacion": "Sin cebolla" },
-    { "itemMenuId": 9, "cantidad": 1, "observacion": null }
+    { "itemMenuId": 1, "cantidad": 1, "observacion": "Sin cebolla", "platoId": 1 },
+    { "itemMenuId": 9, "cantidad": 1, "observacion": null, "platoId": 2 }
   ]
 }
 ```
@@ -93,6 +93,11 @@ Body (`CrearPedidoRequestDto`):
 - `usuarioId`: **null = pedido de invitado** (válido). Con sesión USUARIO/ADMIN
   la app envía el id de la cuenta (ver doc de login para hacerlo robusto
   validando contra el token).
+- `platoId`: **índice del plato al que pertenece la línea (1..N dentro del
+  pedido)**. El backend debe persistirlo y devolverlo en `detalle.platoId`
+  (sección 3.4); así la app reagrupa las líneas por plato y cocina ve cada
+  combinación por separado. Si el backend aún no lo soporta, la app muestra
+  las líneas planas (compatibilidad hacia atrás).
 - `horaRetiroSolicitada`: `HH:mm`. El backend exige **≥20 minutos de
   anticipación** (la app genera slots de 10 min que ya respetan la regla).
 - Los precios **NO viajan**: el backend los toma de su propio menú.
@@ -116,10 +121,15 @@ Body (`CrearPedidoRequestDto`):
   "montoTotal": 6000.0,
   "fechaCreacion": "2026-10-24T12:30:00",
   "detalles": [
-    { "itemMenuId": 1, "nombreItem": "Pollo al Jugo", "cantidad": 1, "precioUnitario": 4800.0, "observacion": "Sin cebolla" }
+    { "itemMenuId": 1, "nombreItem": "Pollo al Jugo", "cantidad": 1, "precioUnitario": 4800.0, "observacion": "Sin cebolla", "platoId": 1 },
+    { "itemMenuId": 9, "nombreItem": "Flan", "cantidad": 1, "precioUnitario": 1200.0, "observacion": null, "platoId": 2 }
   ]
 }
 ```
+
+- `detalles[].platoId`: echo del plato enviado en el POST (1..N). Permite a
+  la app mostrar "PLATO 1 DE 2" con la ficha de cada combinación. Campo
+  nullable: si no viene, la vista de detalle degrada a líneas planas.
 
 ### 3.5 `PATCH /api/v1/pedidos/{id}/estado` — avanzar estado
 

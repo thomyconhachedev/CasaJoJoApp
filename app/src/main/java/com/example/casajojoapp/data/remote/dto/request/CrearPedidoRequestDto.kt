@@ -17,5 +17,9 @@ data class CrearPedidoRequestDto(
 data class ItemPedidoRequestDto(
     @SerializedName("itemMenuId") val itemMenuId: Long,
     @SerializedName("cantidad") val cantidad: Int = 1,
-    @SerializedName("observacion") val observacion: String? = null
+    @SerializedName("observacion") val observacion: String? = null,
+    // CAMBIO PLATO ID: índice del plato al que pertenece (1..N dentro del
+    // pedido). El backend debe persistirlo y devolverlo en detalle.platoId
+    // para que la app pueda reagrupar las líneas por plato.
+    @SerializedName("platoId") val platoId: Int? = null
 )

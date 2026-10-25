@@ -106,17 +106,31 @@ fun PantallaDetallePedido(
                                 plato = plato
                             )
                         }
-                    } else if (pedido.detalles.isNotEmpty()) {
-                        // Modo API: líneas planas devueltas por el backend.
-                        pedido.detalles.forEach { linea ->
-                            TarjetaLineaDetalle(linea = linea)
-                        }
-                    } else {
+                    } else if (pedido.detalles.isEmpty()) {
                         Text(
                             text = "Este pedido no trae detalle de productos.",
                             color = JoJoTextoSecundario,
                             fontSize = 14.sp
                         )
+                    } else if (pedido.detalles.all { it.platoId != null }) {
+                        // Modo API con agrupación: cada plato en su ficha,
+                        // reagrupado por el platoId que devuelve el backend.
+                        val grupos = pedido.detalles
+                            .groupBy { it.platoId!! }
+                            .toList()
+                            .sortedBy { (platoId, _) -> platoId }
+                        grupos.forEach { (platoId, lineasDelPlato) ->
+                            TarjetaPlatoApiAgrupado(
+                                numero = platoId,
+                                totalPlatos = grupos.size,
+                                lineas = lineasDelPlato
+                            )
+                        }
+                    } else {
+                        // Backends viejos (sin platoId): líneas planas.
+                        pedido.detalles.forEach { linea ->
+                            TarjetaLineaDetalle(linea = linea)
+                        }
                     }
 
                     if (!pedido.notasRestricciones.isNullOrBlank()) {
@@ -307,6 +321,71 @@ private fun TarjetaLineaDetalle(linea: LineaDetallePedido) {
             if (!linea.observacion.isNullOrBlank()) {
                 Text(
                     text = "Restricción: ${linea.observacion}",
+                    color = JoJoTextoRestriccion,
+                    fontSize = 13.sp,
+                    fontStyle = FontStyle.Italic
+                )
+            }
+        }
+    }
+}
+
+// Ficha de un plato en modo API: líneas reagrupadas por platoId.
+@Composable
+private fun TarjetaPlatoApiAgrupado(
+    numero: Int,
+    totalPlatos: Int,
+    lineas: List<LineaDetallePedido>
+) {
+    // La observación viene repetida en cada línea (es del plato entero):
+    // se muestra una sola vez al final de la ficha.
+    val restriccionDelPlato = lineas.firstNotNullOfOrNull { linea ->
+        linea.observacion?.takeIf { it.isNotBlank() }
+    }
+
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, JoJoBorde),
+        colors = CardDefaults.cardColors(containerColor = JoJoSuperficie),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "PLATO $numero DE $totalPlatos",
+                color = JoJoNaranjo,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+
+            lineas.forEach { linea ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${linea.cantidad}× ${linea.nombreItem}",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "$${linea.precioUnitario.toLong()}",
+                        color = JoJoNaranjo,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            if (restriccionDelPlato != null) {
+                HorizontalDivider(color = JoJoBorde, thickness = 1.dp)
+                Text(
+                    text = "Restricciones de este plato: $restriccionDelPlato",
                     color = JoJoTextoRestriccion,
                     fontSize = 13.sp,
                     fontStyle = FontStyle.Italic

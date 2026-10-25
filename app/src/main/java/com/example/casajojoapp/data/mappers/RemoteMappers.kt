@@ -58,7 +58,8 @@ fun PedidoResponseDto.aDominio(): Pedido = Pedido(
             nombreItem = it.nombreItem,
             cantidad = it.cantidad,
             precioUnitario = it.precioUnitario,
-            observacion = it.observacion
+            observacion = it.observacion,
+            platoId = it.platoId
         )
     }
 )
@@ -67,35 +68,29 @@ fun PedidoResponseDto.aDominio(): Pedido = Pedido(
 // Aplana los platos en ítems con itemMenuId/cantidad; los precios NO viajan
 // porque el backend los toma de su propio menú.
 // CAMBIO ROLES: usuarioId se envía solo cuando hay sesión (null = invitado).
+// CAMBIO PLATO ID: cada ítem lleva `platoId` (1..N) para que el backend lo
+// persista y lo devuelva en `detalle.platoId`: así la app puede reagrupar
+// las líneas por plato (la restricción viaja además en `observacion`).
+// Reemplaza al viejo mapIndexed + obtenerPlatoIndexParaItem.
 fun Pedido.aRequestDto(): CrearPedidoRequestDto = CrearPedidoRequestDto(
     usuarioId = usuarioId,
     nombreCliente = clienteNombre,
     telefonoContacto = clienteTelefono.ifBlank { null },
     horaRetiroSolicitada = horaRetiro,
     observaciones = notasRestricciones,
-    items = platos.flatMap { plato ->
-        val obs = plato.notas.trim().ifBlank { null }
-        listOfNotNull(plato.proteina) + plato.acompanamientos +
-            listOfNotNull(plato.ensalada) + plato.extras
-    }.mapIndexed { idx, producto ->
-        // Asignar observación del plato al que pertenece
-        val platoIndex = obtenerPlatoIndexParaItem(idx)
-        val obsPlato = if (platoIndex >= 0 && platoIndex < platos.size) {
-            platos[platoIndex].notas.trim().ifBlank { null }
-        } else null
-        com.example.casajojoapp.data.remote.dto.request.ItemPedidoRequestDto(itemMenuId = producto.id, cantidad = 1, observacion = obsPlato)
+    items = platos.flatMapIndexed { indicePlato, plato ->
+        val obsPlato = plato.notas.trim().ifBlank { null }
+        val productosDelPlato = listOfNotNull(plato.proteina) +
+            plato.acompanamientos +
+            listOfNotNull(plato.ensalada) +
+            plato.extras
+        productosDelPlato.map { producto ->
+            ItemPedidoRequestDto(
+                itemMenuId = producto.id,
+                cantidad = 1,
+                observacion = obsPlato,
+                platoId = indicePlato + 1 // agrupación 1..N por pedido
+            )
+        }
     }
 )
-
-private fun Pedido.obtenerPlatoIndexParaItem(itemIndex: Int): Int {
-    var acumulado = 0
-    for (i in platos.indices) {
-        val plato = platos[i]
-        val count = (if (plato.proteina != null) 1 else 0) + plato.acompanamientos.size + (if (plato.ensalada != null) 1 else 0) + plato.extras.size
-        if (itemIndex >= acumulado && itemIndex < acumulado + count) {
-            return i
-        }
-        acumulado += count
-    }
-    return -1
-}
