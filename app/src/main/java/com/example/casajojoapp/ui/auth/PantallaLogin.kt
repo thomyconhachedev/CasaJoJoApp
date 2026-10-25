@@ -52,7 +52,7 @@ import com.example.casajojoapp.ui.theme.JoJoTextoSecundario
 // - Login (USUARIO/ADMIN) o registro de cuenta nueva.
 // - "Continuar como invitado": compra sin cuenta, como siempre.
 // - origenAdmin=true: llegamos del panel restringido; solo un login ADMIN
-//   entra al panel (un USUARIO ve el aviso y sigue aquÃ­).
+//   entra al panel (un USUARIO ve el aviso y sigue aquí).
 // =========================================================
 @Composable
 fun PantallaLogin(
@@ -87,7 +87,7 @@ fun PantallaLogin(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = if (origenAdmin) "Acceso de administrador" else if (uiState.modo == ModoAuth.LOGIN) "Iniciar sesiÃ³n" else "Crear cuenta",
+                text = if (origenAdmin) "Acceso de administrador" else if (uiState.modo == ModoAuth.LOGIN) "Iniciar sesión" else "Crear cuenta",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
@@ -95,15 +95,15 @@ fun PantallaLogin(
             Text(
                 text = when {
                     origenAdmin -> "El panel de cocina requiere una cuenta de administrador."
-                    uiState.modo == ModoAuth.LOGIN -> "Tu cuenta guarda tus datos para ordenar mÃ¡s rÃ¡pido."
-                    else -> "Crea tu cuenta para ordenar mÃ¡s rÃ¡pido."
+                    uiState.modo == ModoAuth.LOGIN -> "Tu cuenta guarda tus datos para ordenar más rápido."
+                    else -> "Crea tu cuenta para ordenar más rápido."
                 },
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
         }
 
-        // ANIMACIÃ“N: el mensaje de error entra/sale con fade.
+        // ANIMACIÓN: el mensaje de error entra/sale con fade.
         AnimatedVisibility(visible = uiState.error != null) {
             uiState.error?.let { mensaje ->
                 Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
@@ -111,8 +111,8 @@ fun PantallaLogin(
         }
 
         // Errores inline por campo: funciones puras del ViewModel (la
-        // validaciÃ³n estÃ¡ desacoplada de la UI, IE 2.2.1) que aquÃ­ solo se
-        // pintan con isError + supportingText + Ã­cono de advertencia.
+        // validación está desacoplada de la UI, IE 2.2.1) que aquí solo se
+        // pintan con isError + supportingText + ícono de advertencia.
         val errorUsuario = viewModel.errorUsername(uiState)
         val errorContrasena = viewModel.errorPassword(uiState)
         val errorConfirmacion = viewModel.errorConfirmacion(uiState)
@@ -139,7 +139,7 @@ fun PantallaLogin(
         OutlinedTextField(
             value = uiState.password,
             onValueChange = viewModel::actualizarPassword,
-            label = { Text("ContraseÃ±a") },
+            label = { Text("Contraseña") },
             singleLine = true,
             enabled = !uiState.isLoading,
             isError = errorContrasena != null,
@@ -159,7 +159,7 @@ fun PantallaLogin(
             OutlinedTextField(
                 value = uiState.passwordConfirmacion,
                 onValueChange = viewModel::actualizarPasswordConfirmacion,
-                label = { Text("Repite la contraseÃ±a") },
+                label = { Text("Repite la contraseña") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 isError = errorConfirmacion != null,
@@ -193,7 +193,7 @@ fun PantallaLogin(
             OutlinedTextField(
                 value = uiState.telefono,
                 onValueChange = viewModel::actualizarTelefono,
-                label = { Text("TelÃ©fono") },
+                label = { Text("Teléfono") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 isError = errorTelefonoCampo != null,
@@ -224,7 +224,7 @@ fun PantallaLogin(
             Text(
                 text = when {
                     uiState.isLoading -> "Un momento..."
-                    uiState.modo == ModoAuth.LOGIN -> "Iniciar sesiÃ³n"
+                    uiState.modo == ModoAuth.LOGIN -> "Iniciar sesión"
                     else -> "Crear cuenta"
                 },
                 fontWeight = FontWeight.Bold,
@@ -244,7 +244,7 @@ fun PantallaLogin(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = if (uiState.modo == ModoAuth.LOGIN) "Â¿No tienes cuenta? CrÃ©ala aquÃ­" else "Ya tengo cuenta",
+                    text = if (uiState.modo == ModoAuth.LOGIN) "¿No tienes cuenta? Créala aquí" else "Ya tengo cuenta",
                     color = JoJoNaranjo
                 )
             }
