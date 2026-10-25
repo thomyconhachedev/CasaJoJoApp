@@ -35,12 +35,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import com.example.casajojoapp.R
 import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.domain.model.Producto
@@ -83,6 +88,11 @@ fun HomeScreen(
             TarjetaMenuDiario(
                 onArmarPedido = { navController.navigate("seleccionProteinaSC") }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Contacto para pedidos grandes / eventos (WhatsApp).
+            TarjetaPedidoGrande()
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -161,7 +171,9 @@ private fun EncabezadoHome() {
     }
 }
 
-// 2. TARJETA HERO: menú del día + acciones principales al flujo de armado.
+// 2. TARJETA HERO: menú del día + acción principal al flujo de armado.
+// A3: se elimina el segundo botón ("Elegir Combo del Día") que apuntaba a
+// la MISMA acción que el principal (rúbrica IE 2.1.1: botones sin acción).
 @Composable
 private fun TarjetaMenuDiario(onArmarPedido: () -> Unit) {
     OutlinedCard(
@@ -200,17 +212,82 @@ private fun TarjetaMenuDiario(onArmarPedido: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = onArmarPedido,
+        }
+    }
+}
+
+// TARJETA DE CONTACTO: pedidos grandes / eventos por WhatsApp
+// (rubrica US-012). Mismo lenguaje visual que la tarjeta hero: borde
+// naranjo, fondo surface, esquinas de 18dp.
+@Composable
+private fun TarjetaPedidoGrande() {
+    val contexto = LocalContext.current
+    val mensajeWhatsApp =
+        "¡Hola, La Casa JoJo! 👋 Quiero coordinar un pedido grande " +
+            "(trabajo, celebración o grupo). ¿Nos ayudan a coordinar cantidades y horario?"
+
+    OutlinedCard(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(2.dp, MaterialTheme.colorScheme.secondary),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "¿UN PEDIDO GRANDE?",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "¿Almuerzo para el equipo, una celebración o un grupo de amigos? " +
+                    "Escríbenos por WhatsApp y coordinamos todo: cantidades, menú y horario de retiro, " +
+                    "a la medida de tu evento.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Button(
+                onClick = {
+                    // Abre WhatsApp con el mensaje precargado. Si se define el
+                    // número (formato 569XXXXXXXX) va directo al chat; si no,
+                    // abre WhatsApp para elegir el contacto.
+                    val uri = if (WHATSAPP_NUMERO.isBlank()) {
+                        Uri.parse("whatsapp://send?text=${Uri.encode(mensajeWhatsApp)}")
+                    } else {
+                        Uri.parse("https://wa.me/$WHATSAPP_NUMERO?text=${Uri.encode(mensajeWhatsApp)}")
+                    }
+                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                    try {
+                        contexto.startActivity(intent)
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(
+                            contexto,
+                            "No se encontró WhatsApp en este dispositivo.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ),
+                contentPadding = PaddingValues(vertical = 14.dp)
             ) {
-                Text(text = "Elegir Combo del Día")
+                Text(text = "Contáctanos por WhatsApp", fontWeight = FontWeight.Bold)
             }
         }
     }
 }
+
+// Número del negocio en formato internacional sin '+' (ej. 56912345678).
+// Vacío => se abre WhatsApp para elegir el contacto.
+private const val WHATSAPP_NUMERO = ""
 
 // 3. CARRUSEL de proteínas del menú vigente, con estado AGOTADO.
 @Composable

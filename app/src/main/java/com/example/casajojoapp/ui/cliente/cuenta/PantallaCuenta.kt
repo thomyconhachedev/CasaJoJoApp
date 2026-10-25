@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -26,21 +28,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.casajojoapp.R
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.*
 
 // =========================================================
-// CAMBIO ROLES: pantalla de cuenta consciente de la sesión.
-// - Sesión USUARIO/ADMIN: muestra usuario+rol, edita sus datos y cierra
-//   sesión. La tabla "clientes" NO se toca (es el perfil de invitado).
-// - Invitado: perfil local de siempre (nombre/teléfono en este dispositivo)
-//   + invitación a crear cuenta/iniciar sesión.
+// CAMBIO ROLES: pantalla de cuenta consciente de la sesiÃ³n.
+// - SesiÃ³n USUARIO/ADMIN: muestra usuario+rol, edita sus datos y cierra
+//   sesiÃ³n. La tabla "clientes" NO se toca (es el perfil de invitado).
+// - Invitado: perfil local de siempre (nombre/telÃ©fono en este dispositivo)
+//   + invitaciÃ³n a crear cuenta/iniciar sesiÃ³n.
 // =========================================================
 @Composable
 fun PantallaCuenta(
@@ -78,13 +82,13 @@ fun PantallaCuenta(
             Text(
                 text = when {
                     uiState.sesionIniciada && uiState.rol == "ADMIN" ->
-                        "Sesión de administrador (@${uiState.username})."
+                        "SesiÃ³n de administrador (@${uiState.username})."
                     uiState.sesionIniciada ->
-                        "Sesión iniciada como @${uiState.username}. Tus datos se autocompletan al ordenar."
+                        "SesiÃ³n iniciada como @${uiState.username}. Tus datos se autocompletan al ordenar."
                     uiState.perfilExiste ->
                         "Tus datos se autocompletan al ordenar (perfil de invitado, en este dispositivo)."
                     else ->
-                        "Guarda tus datos para ordenar más rápido. También puedes crear una cuenta."
+                        "Guarda tus datos para ordenar mÃ¡s rÃ¡pido. TambiÃ©n puedes crear una cuenta."
                 },
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
@@ -116,7 +120,7 @@ fun PantallaCuenta(
                 { Text(text = errorNombreCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
             } else null,
             trailingIcon = if (errorNombreCampo != null) {
-                { Text(text = "⚠️", fontSize = 14.sp) }
+                { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
             } else null,
             colors = camposOscuros(),
             modifier = Modifier.fillMaxWidth()
@@ -128,7 +132,7 @@ fun PantallaCuenta(
                 telefono = it
                 viewModel.limpiarErrorTelefono()
             },
-            label = { Text("Teléfono") },
+            label = { Text("TelÃ©fono") },
             singleLine = true,
             enabled = !uiState.isLoading,
             isError = errorTelefonoCampo != null,
@@ -136,7 +140,7 @@ fun PantallaCuenta(
                 { Text(text = errorTelefonoCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
             } else null,
             trailingIcon = if (errorTelefonoCampo != null) {
-                { Text(text = "⚠️", fontSize = 14.sp) }
+                { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
             } else null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             colors = camposOscuros(),
@@ -180,7 +184,7 @@ fun PantallaCuenta(
                 contentPadding = PaddingValues(vertical = 16.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(text = "Cerrar sesión", color = JoJoRojoClaro, fontSize = 15.sp)
+                Text(text = "Cerrar sesiÃ³n", color = JoJoRojoClaro, fontSize = 15.sp)
             }
         } else {
             TextButton(
@@ -189,7 +193,7 @@ fun PantallaCuenta(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "¿Quieres guardar tu cuenta en cualquier dispositivo? Inicia sesión o créala",
+                    text = "Â¿Quieres guardar tu cuenta en cualquier dispositivo? Inicia sesiÃ³n o crÃ©ala",
                     color = JoJoNaranjo,
                     fontSize = 13.sp
                 )

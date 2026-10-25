@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -26,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.casajojoapp.R
 import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.theme.JoJoBorde
 import com.example.casajojoapp.ui.theme.JoJoDeshabilitado
@@ -48,7 +52,7 @@ import com.example.casajojoapp.ui.theme.JoJoTextoSecundario
 // - Login (USUARIO/ADMIN) o registro de cuenta nueva.
 // - "Continuar como invitado": compra sin cuenta, como siempre.
 // - origenAdmin=true: llegamos del panel restringido; solo un login ADMIN
-//   entra al panel (un USUARIO ve el aviso y sigue aquí).
+//   entra al panel (un USUARIO ve el aviso y sigue aquÃ­).
 // =========================================================
 @Composable
 fun PantallaLogin(
@@ -83,7 +87,7 @@ fun PantallaLogin(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = if (origenAdmin) "Acceso de administrador" else if (uiState.modo == ModoAuth.LOGIN) "Iniciar sesión" else "Crear cuenta",
+                text = if (origenAdmin) "Acceso de administrador" else if (uiState.modo == ModoAuth.LOGIN) "Iniciar sesiÃ³n" else "Crear cuenta",
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
@@ -91,15 +95,15 @@ fun PantallaLogin(
             Text(
                 text = when {
                     origenAdmin -> "El panel de cocina requiere una cuenta de administrador."
-                    uiState.modo == ModoAuth.LOGIN -> "Tu cuenta guarda tus datos para ordenar más rápido."
-                    else -> "Crea tu cuenta para ordenar más rápido."
+                    uiState.modo == ModoAuth.LOGIN -> "Tu cuenta guarda tus datos para ordenar mÃ¡s rÃ¡pido."
+                    else -> "Crea tu cuenta para ordenar mÃ¡s rÃ¡pido."
                 },
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
         }
 
-        // ANIMACIÓN: el mensaje de error entra/sale con fade.
+        // ANIMACIÃ“N: el mensaje de error entra/sale con fade.
         AnimatedVisibility(visible = uiState.error != null) {
             uiState.error?.let { mensaje ->
                 Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)
@@ -107,8 +111,8 @@ fun PantallaLogin(
         }
 
         // Errores inline por campo: funciones puras del ViewModel (la
-        // validación está desacoplada de la UI, IE 2.2.1) que aquí solo se
-        // pintan con isError + supportingText + ícono de advertencia.
+        // validaciÃ³n estÃ¡ desacoplada de la UI, IE 2.2.1) que aquÃ­ solo se
+        // pintan con isError + supportingText + Ã­cono de advertencia.
         val errorUsuario = viewModel.errorUsername(uiState)
         val errorContrasena = viewModel.errorPassword(uiState)
         val errorConfirmacion = viewModel.errorConfirmacion(uiState)
@@ -126,7 +130,7 @@ fun PantallaLogin(
                 { Text(text = errorUsuario, fontSize = 12.sp, color = JoJoRojoClaro) }
             } else null,
             trailingIcon = if (errorUsuario != null) {
-                { Text(text = "⚠️", fontSize = 14.sp) }
+                { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
             } else null,
             colors = camposOscuros(),
             modifier = Modifier.fillMaxWidth()
@@ -135,7 +139,7 @@ fun PantallaLogin(
         OutlinedTextField(
             value = uiState.password,
             onValueChange = viewModel::actualizarPassword,
-            label = { Text("Contraseña") },
+            label = { Text("ContraseÃ±a") },
             singleLine = true,
             enabled = !uiState.isLoading,
             isError = errorContrasena != null,
@@ -143,7 +147,7 @@ fun PantallaLogin(
                 { Text(text = errorContrasena, fontSize = 12.sp, color = JoJoRojoClaro) }
             } else null,
             trailingIcon = if (errorContrasena != null) {
-                { Text(text = "⚠️", fontSize = 14.sp) }
+                { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
             } else null,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -155,7 +159,7 @@ fun PantallaLogin(
             OutlinedTextField(
                 value = uiState.passwordConfirmacion,
                 onValueChange = viewModel::actualizarPasswordConfirmacion,
-                label = { Text("Repite la contraseña") },
+                label = { Text("Repite la contraseÃ±a") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 isError = errorConfirmacion != null,
@@ -163,7 +167,7 @@ fun PantallaLogin(
                     { Text(text = errorConfirmacion, fontSize = 12.sp, color = JoJoRojoClaro) }
                 } else null,
                 trailingIcon = if (errorConfirmacion != null) {
-                    { Text(text = "⚠️", fontSize = 14.sp) }
+                    { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
                 } else null,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -181,7 +185,7 @@ fun PantallaLogin(
                     { Text(text = errorNombreCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
                 } else null,
                 trailingIcon = if (errorNombreCampo != null) {
-                    { Text(text = "⚠️", fontSize = 14.sp) }
+                    { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
                 } else null,
                 colors = camposOscuros(),
                 modifier = Modifier.fillMaxWidth()
@@ -189,7 +193,7 @@ fun PantallaLogin(
             OutlinedTextField(
                 value = uiState.telefono,
                 onValueChange = viewModel::actualizarTelefono,
-                label = { Text("Teléfono") },
+                label = { Text("TelÃ©fono") },
                 singleLine = true,
                 enabled = !uiState.isLoading,
                 isError = errorTelefonoCampo != null,
@@ -197,7 +201,7 @@ fun PantallaLogin(
                     { Text(text = errorTelefonoCampo, fontSize = 12.sp, color = JoJoRojoClaro) }
                 } else null,
                 trailingIcon = if (errorTelefonoCampo != null) {
-                    { Text(text = "⚠️", fontSize = 14.sp) }
+                    { Icon(painter = painterResource(id = R.drawable.ic_error), contentDescription = null, modifier = Modifier.size(18.dp), tint = JoJoRojoClaro) }
                 } else null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 colors = camposOscuros(),
@@ -220,7 +224,7 @@ fun PantallaLogin(
             Text(
                 text = when {
                     uiState.isLoading -> "Un momento..."
-                    uiState.modo == ModoAuth.LOGIN -> "Iniciar sesión"
+                    uiState.modo == ModoAuth.LOGIN -> "Iniciar sesiÃ³n"
                     else -> "Crear cuenta"
                 },
                 fontWeight = FontWeight.Bold,
@@ -240,7 +244,7 @@ fun PantallaLogin(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = if (uiState.modo == ModoAuth.LOGIN) "¿No tienes cuenta? Créala aquí" else "Ya tengo cuenta",
+                    text = if (uiState.modo == ModoAuth.LOGIN) "Â¿No tienes cuenta? CrÃ©ala aquÃ­" else "Ya tengo cuenta",
                     color = JoJoNaranjo
                 )
             }
