@@ -37,6 +37,7 @@ import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.*
+import kotlinx.coroutines.delay
 
 // =========================================================
 // MIS PEDIDOS (vista de cliente, botón del medio de la barra inferior):
@@ -54,7 +55,14 @@ fun PantallaMisPedidos(
     val uiState by viewModel.uiState.collectAsState()
     val sesion by viewModel.sesion.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.cargarPedidos() }
+    // Refresco en segundo plano (45 s): el cliente ve el cambio de estado
+    // (p. ej. "Listo para retiro") sin tener que salir y volver a entrar.
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.cargarPedidos()
+            delay(45_000)
+        }
+    }
 
     Column(
         modifier = Modifier

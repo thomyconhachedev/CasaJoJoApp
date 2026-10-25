@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.casajojoapp.data.modo.ModoDatos
+import kotlinx.coroutines.delay
 import com.example.casajojoapp.domain.model.EstadoPedido
 import com.example.casajojoapp.domain.model.Pedido
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
@@ -77,9 +78,15 @@ fun PantallaAdmin(
     val modo by viewModel.modoDatos.collectAsState()
     val baseUrl by viewModel.baseUrl.collectAsState()
 
-    // Recarga la cola al entrar al panel (refleja cambios hechos en el backend
-    // o un cambio de modo ocurrido fuera de esta pantalla).
-    LaunchedEffect(Unit) { viewModel.cargarPedidos() }
+    // Refresco automático de la cola (45 s): la información se mantiene
+    // sincronizada entre dispositivos sin recargar a mano (rubrica B8).
+    // El LaunchedEffect se cancela al salir de la pantalla.
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.cargarPedidos()
+            delay(45_000)
+        }
+    }
 
     // Cola: primero los NO entregados por hora de retiro (lo más próximo
     // primero); los ENTREGADOS quedan al final de la lista.

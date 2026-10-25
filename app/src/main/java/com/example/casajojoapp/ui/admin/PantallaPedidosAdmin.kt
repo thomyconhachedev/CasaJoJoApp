@@ -33,6 +33,7 @@ import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.JoJoFondoApp
 import com.example.casajojoapp.ui.theme.JoJoRojoClaro
 import com.example.casajojoapp.ui.theme.JoJoTextoSecundario
+import kotlinx.coroutines.delay
 
 // =========================================================
 // VISTA DE PEDIDOS DEL ADMINISTRADOR (solo cola + contadores):
@@ -53,8 +54,14 @@ fun PantallaPedidosAdmin(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Recarga la cola al entrar (refleja cambios hechos en otra pantalla).
-    LaunchedEffect(Unit) { viewModel.cargarPedidos() }
+    // Refresco en segundo plano (45 s): la cola filtrable también se
+    // mantiene sincronizada con el backend sin recargar a mano.
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.cargarPedidos()
+            delay(45_000)
+        }
+    }
 
     // Filtro por estado: null = Todos. Se persiste al rotar/recrear.
     var filtro by rememberSaveable { mutableStateOf(filtroInicial) }
