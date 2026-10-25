@@ -22,11 +22,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.admin.AccesoRestringidoAdmin
 import com.example.casajojoapp.ui.admin.PantallaAdmin
+import com.example.casajojoapp.ui.admin.PantallaPedidosAdmin
 import com.example.casajojoapp.ui.auth.PantallaLogin
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
 import com.example.casajojoapp.ui.cliente.armado.ResumenPlatoScreen
@@ -38,6 +40,8 @@ import com.example.casajojoapp.ui.cliente.carrito.SeleccionarHoraRetiroSC
 import com.example.casajojoapp.ui.cliente.carrito.carritoSC
 import com.example.casajojoapp.ui.cliente.cuenta.PantallaCuenta
 import com.example.casajojoapp.ui.cliente.home.HomeScreen
+import com.example.casajojoapp.ui.cliente.pedidos.PantallaMisPedidos
+import com.example.casajojoapp.ui.componentes.BarraInferior
 import com.example.casajojoapp.ui.theme.CasaJoJoAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -77,10 +81,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // BARRA INFERIOR ESTÁTICA (3 botones cuadrados): visible solo
+                // en las pantallas top-level (home, pedidos, perfil). El
+                // flujo de armado y el login la ocultan.
+                val entrada by navController.currentBackStackEntryAsState()
+                val rutaActual = entrada?.destination?.route
+                val rutasConBarra = setOf("home", "pedidos", "cuenta")
+
                 // Sin Scaffold el rol "background" del ColorScheme nunca se pinta y
                 // el Text resolveria contra LocalContentColor (negro fijo), no contra
                 // onSurface. El inner padding tambien aplica los insets del sistema.
-                Scaffold { innerPadding ->
+                Scaffold(
+                    bottomBar = {
+                        if (rutaActual in rutasConBarra) {
+                            BarraInferior(
+                                navController = navController,
+                                rutaActual = rutaActual
+                            )
+                        }
+                    }
+                ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         startDestination = "home",
@@ -118,6 +138,36 @@ class MainActivity : ComponentActivity() {
                         // CAMBIO CUENTAS: perfil según sesión (cuenta o invitado).
                         composable("cuenta") {
                             PantallaCuenta(navController = navController)
+                        }
+                        // VISTA DE PEDIDOS (barra inferior, botón del medio):
+                        // - ADMIN -> cola filtrable por estado (filtro inicial
+                        //   opcional vía ?filtro=ESTADO desde el panel).
+                        // - USUARIO -> sus pedidos (linkeados a la cuenta).
+                        // - INVITADO -> invitación a iniciar sesión.
+                        composable(
+                            route = "pedidos?filtro={filtro}",
+                            arguments = listOf(
+                                navArgument("filtro") {
+                                    type = NavType.StringType
+                                    defaultValue = ""
+                                }
+                            )
+                        ) { datosRuta ->
+                            val filtroInicial =
+                                datosRuta.arguments?.getString("filtro")?.ifBlank { null }
+                            val sesionPedidos by orderViewModel.sesion.collectAsState()
+                            if (sesionPedidos.rol == Rol.ADMIN) {
+                                PantallaPedidosAdmin(
+                                    navController = navController,
+                                    viewModel = orderViewModel,
+                                    filtroInicial = filtroInicial
+                                )
+                            } else {
+                                PantallaMisPedidos(
+                                    navController = navController,
+                                    viewModel = orderViewModel
+                                )
+                            }
                         }
                         // CAMBIO ROLES: login/registro con "origenAdmin" opcional
                         // (el panel exige cuenta de administrador).

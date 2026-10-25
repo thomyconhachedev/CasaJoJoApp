@@ -147,6 +147,21 @@ fun PantallaAdmin(
         } else {
             Column(modifier = Modifier.weight(1f)) {
                 ContadoresPorEstado(pedidos = pedidosEnCola)
+                Spacer(modifier = Modifier.height(8.dp))
+                // Acceso a la vista de pedidos filtrable (nueva pantalla:
+                // solo cola + contadores con filtro por estado).
+                OutlinedButton(
+                    onClick = { navController.navigate("pedidos") },
+                    border = BorderStroke(1.dp, JoJoNaranjo),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = JoJoNaranjo),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "📋 Ver cola filtrable por estado",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -388,43 +403,92 @@ fun TarjetaPedidoAdmin(
     }
 }
 
-// Contadores por estado (chips) mostrados arriba de la cola
+// Contadores por estado (chips) mostrados arriba de la cola.
+// - En el panel actual se muestran solo como resumen (onFiltrar = null).
+// - En la vista de pedidos filtrable, al presionar un chip se filtra la
+//   lista por ese estado (volver a presionar o "Todos" limpia el filtro).
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ContadoresPorEstado(pedidos: List<Pedido>) {
+fun ContadoresPorEstado(
+    pedidos: List<Pedido>,
+    filtroSeleccionado: EstadoPedido? = null,
+    onFiltrar: ((EstadoPedido?) -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     val conteo = pedidos.groupingBy { it.estado }.eachCount()
     FlowRow(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        EstadoPedido.entries.forEach { estado ->
-            val color = colorDeEstado(estado)
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = color.copy(alpha = 0.15f),
-                border = BorderStroke(1.dp, color)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = estado.nombre,
-                        color = color,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "${conteo[estado] ?: 0}",
-                        color = color,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+        // Chip "Todos": solo existe donde hay filtrado activo.
+        if (onFiltrar != null) {
+            ChipContador(
+                etiqueta = "Todos",
+                cantidad = pedidos.size,
+                color = JoJoNaranjo,
+                seleccionado = filtroSeleccionado == null,
+                onClic = { onFiltrar(null) }
+            )
         }
+        EstadoPedido.entries.forEach { estado ->
+            ChipContador(
+                etiqueta = estado.nombre,
+                cantidad = conteo[estado] ?: 0,
+                color = colorDeEstado(estado),
+                seleccionado = onFiltrar != null && filtroSeleccionado == estado,
+                onClic = onFiltrar?.let { accion ->
+                    { accion(if (filtroSeleccionado == estado) null else estado) }
+                }
+            )
+        }
+    }
+}
+
+// Chip individual de estado/cantidad; clicable solo si tiene acción.
+@Composable
+private fun ChipContador(
+    etiqueta: String,
+    cantidad: Int,
+    color: Color,
+    seleccionado: Boolean,
+    onClic: (() -> Unit)?
+) {
+    val contenido: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = etiqueta,
+                color = color,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "$cantidad",
+                color = color,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+    val fondo = color.copy(alpha = if (seleccionado) 0.40f else 0.15f)
+    val borde = BorderStroke(if (seleccionado) 2.dp else 1.dp, color)
+    if (onClic != null) {
+        Surface(
+            onClick = onClic,
+            shape = RoundedCornerShape(10.dp),
+            color = fondo,
+            border = borde
+        ) { contenido() }
+    } else {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = fondo,
+            border = borde
+        ) { contenido() }
     }
 }
 
