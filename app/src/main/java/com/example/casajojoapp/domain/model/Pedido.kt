@@ -20,7 +20,10 @@ data class Pedido(
     val detalles: List<LineaDetallePedido> = emptyList(),
     // CAMBIO ROLES: cuenta del pedido cuando hay sesión USUARIO/ADMIN;
     // null = pedido de invitado.
-    val usuarioId: Long? = null
+    val usuarioId: Long? = null,
+    // CAMBIO HISTORIAL: ModoDatos donde se registró (LOCAL/API); lo pone la
+    // capa de persistencia local, el backend lo ignora (null al llegar de API).
+    val origenRegistro: String? = null
 ) {
     /** Unidades a preparar: platos armados en local, suma de cantidades en API. */
     val unidades: Int

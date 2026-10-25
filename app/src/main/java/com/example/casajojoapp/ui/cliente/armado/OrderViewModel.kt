@@ -3,6 +3,8 @@ package com.example.casajojoapp.ui.cliente.armado
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.casajojoapp.data.ServicioLocator
+import com.example.casajojoapp.data.local.mappers.aDominio
+import com.example.casajojoapp.data.local.mappers.aEntity
 import com.example.casajojoapp.data.modo.ModoDatos
 import com.example.casajojoapp.data.modo.ModoDatosRepository
 import com.example.casajojoapp.data.remote.ApiError
@@ -80,16 +82,50 @@ class OrderViewModel : ViewModel() {
         }
     }
 
+    // CAMBIO HISTORIAL: fuente local de pedidos (Room) para persistir el
+    // historial y restaurar la cola tras reiniciar.
+    private val pedidosDao = ServicioLocator.baseDeDatos.pedidoDao()
+
     init {
-        // Restaura la sesión persistida (la construye AuthRepositoryLocal) y
-        // carga menú + cola + datos de contacto del perfil vigente.
+        // Restaura la sesión persistida, repuebla la cola local desde Room
+        // (si está vacía) y recarga todo: la cola ya se ve restaurada antes
+        // del primer fetch.
         viewModelScope.launch {
             (authRepository as? com.example.casajojoapp.data.repository.AuthRepositoryLocal)
                 ?.restaurarSesionPrevia()
+            restaurarColaLocal()
+            cargarPedidos()
             cargarDatosClienteGuardados()
         }
         cargarMenu()
-        cargarPedidos()
+    }
+
+    // Restaura en la cola LOCAL los pedidos que Room guardó en modo LOCAL.
+    private suspend fun restaurarColaLocal() {
+        val guardados = try {
+            pedidosDao.listarPorOrigen(ModoDatos.LOCAL.name).map { it.aDominio() }
+        } catch (_: Exception) {
+            emptyList()
+        }
+        if (guardados.isNotEmpty()) pedidoRepositoryLocal.sembrar(guardados)
+    }
+
+    // Historial completo (cualquier origen): respaldo cuando la cola viene
+    // vacía o el backend no responde.
+    private suspend fun historialLocal(): List<Pedido> = try {
+        pedidosDao.listar().map { it.aDominio() }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    // Persiste un pedido sin interrumpir el flujo si algo falla (el
+    // historial es un respaldo, nunca debe romper el envío/estado).
+    private suspend fun guardarEnHistorial(pedido: Pedido) {
+        try {
+            pedidosDao.upsert(pedido.aEntity(modoDatosRepository.modo.value.name))
+        } catch (_: Exception) {
+            // no-op: mejor perder un registro de historial que un envío
+        }
     }
 
     // Autocompleta nombre y teléfono desde la sesión (USUARIO/ADMIN) o el
@@ -330,6 +366,8 @@ class OrderViewModel : ViewModel() {
                         texto = "Faltan 5 minutos para retirar tu pedido en La Casa JoJo."
                     )
                 }
+                // CAMBIO HISTORIAL: persiste el pedido recién creado.
+                guardarEnHistorial(confirmado)
                 cargarPedidos() // refresca la cola de admin desde el repositorio
             } catch (e: CancellationException) {
                 throw e
@@ -351,15 +389,21 @@ class OrderViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val lista = pedidoRepository().listarPedidos()
-                _uiState.value = _uiState.value.copy(pedidosEnviados = lista, errorMessage = null)
+                // CAMBIO HISTORIAL: cola vacía (p. ej. reinicio en modo LOCAL
+                // o cliente sin pedidos del día) => se sirve desde Room.
+                val efectiva = if (lista.isEmpty()) historialLocal() else lista
+                _uiState.value = _uiState.value.copy(
+                    pedidosEnviados = efectiva,
+                    errorMessage = null
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                val colaLocal = if (modoDatosRepository.modo.value == ModoDatos.API) {
-                    pedidoRepositoryLocal.listarPedidos()
-                } else emptyList()
+                // Backend inaccesible: memoria local y, si está vacía, Room.
+                val respaldo = pedidoRepositoryLocal.listarPedidos()
+                    .ifEmpty { historialLocal() }
                 _uiState.value = _uiState.value.copy(
-                    pedidosEnviados = colaLocal,
+                    pedidosEnviados = respaldo,
                     errorMessage = "Backend no disponible: ${ApiError.mensaje(e)}"
                 )
             }
@@ -406,6 +450,11 @@ class OrderViewModel : ViewModel() {
                     titulo = titulo,
                     texto = texto
                 )
+                // CAMBIO HISTORIAL: persiste el cambio de estado en Room
+                // (sobre la copia local, sin esperar al refresco).
+                _uiState.value.pedidosEnviados.firstOrNull { it.id == id }?.let { previo ->
+                    guardarEnHistorial(previo.copy(estado = nuevoEstado))
+                }
                 cargarPedidos()
             } catch (e: CancellationException) {
                 throw e

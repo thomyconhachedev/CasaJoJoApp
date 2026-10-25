@@ -48,6 +48,16 @@ class PedidoRepositoryLocal : PedidoRepository {
             pedidos[indice] = pedidos[indice].copy(estado = nuevoEstado)
         }
     }
+
+    // CAMBIO HISTORIAL: repuebla la cola en memoria desde Room después de
+    // reiniciar la app (solo si aún está vacía). Conserva los ids y deja la
+    // secuencia por encima del máximo para que los nuevos pedidos no se
+    // repitan con los restaurados.
+    fun sembrar(pedidosRestaurados: List<Pedido>) {
+        if (pedidos.isNotEmpty() || pedidosRestaurados.isEmpty()) return
+        pedidos.addAll(pedidosRestaurados.sortedBy { it.id })
+        secuenciaId.set(pedidos.maxOf { it.id })
+    }
 }
 
 // Contra el backend (modo API).
