@@ -91,8 +91,7 @@ class OrderViewModel : ViewModel() {
         // (si está vacía) y recarga todo: la cola ya se ve restaurada antes
         // del primer fetch.
         viewModelScope.launch {
-            (authRepository as? com.example.casajojoapp.data.repository.AuthRepositoryLocal)
-                ?.restaurarSesionPrevia()
+            authRepository.restaurarSesion()
             restaurarColaLocal()
             cargarPedidos()
             cargarDatosClienteGuardados()

@@ -44,6 +44,9 @@ interface AuthRepository {
 
     /** Actualiza nombre/teléfono del usuario de la sesión actual. */
     suspend fun actualizarPerfil(nombre: String, telefono: String): ResultadoAuth
+
+    /** Restaura la sesión persistida al arrancar (prefs o backend). */
+    suspend fun restaurarSesion()
 }
 
 // Implementación local. La sesión se guarda solo como username en prefs
@@ -59,7 +62,7 @@ class AuthRepositoryLocal(
     override val sesion: StateFlow<Sesion> = _sesion.asStateFlow()
 
     // Restaura la sesión persistida (si el usuario sigue en la base).
-    suspend fun restaurarSesionPrevia() {
+    override suspend fun restaurarSesion() {
         val username = prefs.getString(CLAVE_SESION, null) ?: return
         val entidad = dao.buscarPorUsername(username)
         if (entidad == null) {

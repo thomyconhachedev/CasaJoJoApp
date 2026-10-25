@@ -44,8 +44,10 @@ class LoginViewModel : ViewModel() {
         // Siembra el admin la primera vez que se abre el login y restaura
         // la sesión previa (si la app se reinició con sesión iniciada).
         viewModelScope.launch {
+            // Con login local siembra su admin; con auth de backend no hace
+            // nada (la cuenta admin la siembra el propio backend).
             (authRepository as? AuthRepositoryLocal)?.asegurarAdminSembrado()
-            (authRepository as? AuthRepositoryLocal)?.restaurarSesionPrevia()
+            authRepository.restaurarSesion()
         }
     }
 

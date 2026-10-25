@@ -52,6 +52,7 @@ fun PedidoResponseDto.aDominio(): Pedido = Pedido(
     notasRestricciones = observaciones,
     estado = EstadoPedido.desde(estado),
     codigoSeguimiento = codigoSeguimiento,
+    usuarioId = usuarioId,
     detalles = detalles.map {
         LineaDetallePedido(
             itemMenuId = it.itemMenuId,

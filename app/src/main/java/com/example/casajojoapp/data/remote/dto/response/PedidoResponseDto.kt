@@ -7,6 +7,9 @@ import com.google.gson.annotations.SerializedName
 data class PedidoResponseDto(
     @SerializedName("id") val id: Long,
     @SerializedName("codigoSeguimiento") val codigoSeguimiento: String? = null,
+    // CAMBIO AUTH: id de la cuenta del backend que hizo el pedido (null =
+    // invitado). Es lo que permite filtrar "Mis Pedidos" por cuenta.
+    @SerializedName("usuarioId") val usuarioId: Long? = null,
     @SerializedName("estado") val estado: String,
     @SerializedName("horaRetiro") val horaRetiro: String,
     @SerializedName("nombreCliente") val nombreCliente: String? = null,

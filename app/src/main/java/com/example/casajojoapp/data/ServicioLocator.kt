@@ -4,7 +4,7 @@ import android.content.Context
 import com.example.casajojoapp.data.local.AppDatabase
 import com.example.casajojoapp.data.modo.ModoDatosRepository
 import com.example.casajojoapp.data.repository.AuthRepository
-import com.example.casajojoapp.data.repository.AuthRepositoryLocal
+import com.example.casajojoapp.data.repository.AuthRepositoryApi
 import com.example.casajojoapp.data.repository.ClienteRepository
 import com.example.casajojoapp.data.repository.ClienteRepositoryImpl
 import com.example.casajojoapp.data.repository.PedidoRepositoryLocal
@@ -36,7 +36,13 @@ object ServicioLocator {
     val recordatorios: RecordatoriosRetiro by lazy { RecordatoriosRetiro(contexto) }
 
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryLocal(baseDeDatos.usuarioDao(), contexto)
+        // Auth contra el backend (JWT): login/registro remotos y token en
+        // todas las peticiones. Para volver al login local basta con
+        // AuthRepositoryLocal(baseDeDatos.usuarioDao(), contexto).
+        AuthRepositoryApi(
+            urlProvider = { modoDatos.baseUrl.value },
+            context = contexto
+        )
     }
 
     val clienteRepository: ClienteRepository by lazy {
