@@ -135,7 +135,8 @@ class MainActivity : ComponentActivity() {
                         composable("resumen_plato") {
                             ResumenPlatoScreen(navController = navController, viewModel = orderViewModel)
                         }
-                        // Selector de hora de retiro (12:00–22:00 TEMPORAL de
+                        // Selector de hora de retiro (rango de pruebas
+                        // 12:00–02:00; ver util/HorarioRetiro)
                         // pruebas; ver util/HorarioRetiro) entre Resumen y Carrito.
                         composable("horaRetiroSC") {
                             SeleccionarHoraRetiroSC(navController = navController, viewModel = orderViewModel)

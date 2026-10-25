@@ -131,7 +131,8 @@ Requisitos: Android Studio Koala+, JDK 17+ (toolchain resuelta por Gradle), Andr
 
 - Múltiples platos; cada uno con su resumen y restricciones.
 - Hora de retiro en slots de 10 minutos con anticipación mínima de 20 min
-  (**rango de pruebas 12:00–22:00**; el rango real del negocio se ajusta en
+  (**rango de pruebas 12:00–02:00, cruzando medianoche**; el día real se
+  ajusta a 12:00–16:00 cambiando `HORAS_VENTANA` en
   `util/HorarioRetiro.kt` — una sola constante, todo el texto deriva de ella).
 - Envío delegado al repositorio vigente; en API el backend asigna id/código.
 

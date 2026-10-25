@@ -45,8 +45,9 @@ import com.example.casajojoapp.util.HorarioRetiro
 // =========================================================
 // CAMBIO HORARIO (pantalla NUEVA):
 // - Selector de hora de retiro con slots cada 10 minutos generados por
-//   util/HorarioRetiro (única fuente de verdad del rango; hoy 12:00–22:00
-//   TEMPORAL para pruebas — ver TOTAL_HORAS_PRUEBA en HorarioRetiro).
+//   util/HorarioRetiro (única fuente de verdad del rango; hoy 12:00–02:00
+//   TEMPORAL para pruebas — cambiar HORAS_VENTANA de 14 a 4 el día de la
+//   demo para que quede 12:00–16:00).
 // - El valor se guarda en OrderUiState.horaRetiroSeleccionada a través
 //   de OrderViewModel.actualizarHoraRetiro().
 // - Flujo: Resumen ("Ir al carrito") -> ESTA PANTALLA -> Carrito.
