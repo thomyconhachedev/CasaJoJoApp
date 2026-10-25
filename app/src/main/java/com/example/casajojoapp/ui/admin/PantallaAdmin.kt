@@ -173,6 +173,9 @@ fun PantallaAdmin(
                         TarjetaPedidoAdmin(
                             pedido = pedido,
                             modifier = Modifier.animateItem(),
+                            onVerDetalle = {
+                                navController.navigate("detallePedido/${pedido.id}")
+                            },
                             onCambioEstado = { nuevoEstado ->
                                 // LOCAL: cambia el estado en memoria.
                                 // API: PATCH /api/v1/pedidos/{id}/estado.
@@ -337,6 +340,7 @@ private fun SeccionModoDatos(
 fun TarjetaPedidoAdmin(
     pedido: Pedido,
     modifier: Modifier = Modifier,
+    onVerDetalle: (() -> Unit)? = null,
     onCambioEstado: (EstadoPedido) -> Unit
 ) {
     Card(
@@ -398,6 +402,23 @@ fun TarjetaPedidoAdmin(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Acceso a la ficha completa del pedido (especificación de
+            // cada plato / línea de productos).
+            if (onVerDetalle != null) {
+                HorizontalDivider(color = JoJoBorde, thickness = 1.dp)
+                TextButton(
+                    onClick = onVerDetalle,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Ver detalle completo →",
+                        color = JoJoNaranjo,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

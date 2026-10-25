@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.admin.AccesoRestringidoAdmin
 import com.example.casajojoapp.ui.admin.PantallaAdmin
+import com.example.casajojoapp.ui.admin.PantallaDetallePedido
 import com.example.casajojoapp.ui.admin.PantallaPedidosAdmin
 import com.example.casajojoapp.ui.auth.PantallaLogin
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
@@ -177,6 +178,21 @@ class MainActivity : ComponentActivity() {
                                     viewModel = orderViewModel
                                 )
                             }
+                        }
+                        // DETALLE COMPLETO DE UN PEDIDO (admin): especificación
+                        // de cada plato (LOCAL) o de cada línea (API).
+                        composable(
+                            route = "detallePedido/{id}",
+                            arguments = listOf(
+                                navArgument("id") { type = NavType.LongType }
+                            )
+                        ) { datosRuta ->
+                            val pedidoId = datosRuta.arguments?.getLong("id") ?: -1L
+                            PantallaDetallePedido(
+                                navController = navController,
+                                viewModel = orderViewModel,
+                                pedidoId = pedidoId
+                            )
                         }
                         // CAMBIO ROLES: login/registro con "origenAdmin" opcional
                         // (el panel exige cuenta de administrador).

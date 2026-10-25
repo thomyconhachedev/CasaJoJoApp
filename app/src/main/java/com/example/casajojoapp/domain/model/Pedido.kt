@@ -32,5 +32,7 @@ data class LineaDetallePedido(
     val itemMenuId: Long?,
     val nombreItem: String,
     val cantidad: Int,
-    val precioUnitario: Double
+    val precioUnitario: Double,
+    // Restricción/observación de la línea (viene del backend en modo API).
+    val observacion: String? = null
 )

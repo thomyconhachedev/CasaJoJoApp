@@ -57,7 +57,8 @@ fun PedidoResponseDto.aDominio(): Pedido = Pedido(
             itemMenuId = it.itemMenuId,
             nombreItem = it.nombreItem,
             cantidad = it.cantidad,
-            precioUnitario = it.precioUnitario
+            precioUnitario = it.precioUnitario,
+            observacion = it.observacion
         )
     }
 )

@@ -143,6 +143,9 @@ fun PantallaPedidosAdmin(
                         TarjetaPedidoAdmin(
                             pedido = pedido,
                             modifier = Modifier.animateItem(),
+                            onVerDetalle = {
+                                navController.navigate("detallePedido/${pedido.id}")
+                            },
                             onCambioEstado = { nuevoEstado ->
                                 viewModel.actualizarEstadoPedido(pedido.id, nuevoEstado)
                             }
