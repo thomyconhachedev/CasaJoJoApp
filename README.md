@@ -152,6 +152,14 @@ Requisitos: Android Studio Koala+, JDK 17+ (toolchain resuelta por Gradle), Andr
 - Precio del plato fijo `$4.800` (`PlatoArmado.PRECIO_BASE`); solo extras suman.
 - Pedidos de cuentas se asocian (`usuarioId`); los de invitados viajan sin cuenta.
 
+### Recursos nativos del dispositivo
+
+La app integra tres recursos nativos, con su permiso y configuración correspondientes:
+
+- **Notificaciones locales** (`POST_NOTIFICATIONS` + canal): aviso de cambio de estado de la comanda ("Tu pedido {código} está listo para retiro") y **recordatorio 5 minutos antes** de la hora de retiro programado con `AlarmManager` (sobrevive a cerrar la app y se reprograma tras un reinicio).
+- **Selector de hora nativo**: `TimePickerDialog` de Android en la pantalla de retiro, además de la grilla rápida de 10 minutos.
+- **Almacenamiento local con Room**: perfil de invitado, usuarios con roles e **historial de pedidos** que persiste entre sesiones (migraciones v1→v2→v3).
+
 ---
 
 ## Seguridad y roadmap
