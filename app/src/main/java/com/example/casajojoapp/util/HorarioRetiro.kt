@@ -75,6 +75,28 @@ object HorarioRetiro {
     }
 
     /**
+     * Momento (epoch millis) del aviso "faltan 5 minutos": la hora de
+     * retiro resuelta a la fecha correcta (hoy o mañana, por el cruce de
+     * medianoche) menos 5 minutos. null si el aviso ya quedó en el pasado
+     * (pedido a menos de 5 minutos) o la hora es inválida.
+     */
+    fun momentoRecordatorio(
+        horaRetiro: String,
+        ahora: LocalDateTime = LocalDateTime.now()
+    ): Long? {
+        val elegida = try {
+            LocalTime.parse(horaRetiro)
+        } catch (_: java.time.format.DateTimeParseException) {
+            return null
+        }
+        val candidataHoy = LocalDateTime.of(ahora.toLocalDate(), elegida)
+        val retiro = if (!candidataHoy.isBefore(ahora)) candidataHoy else candidataHoy.plusDays(1)
+        val aviso = retiro.minusMinutes(5)
+        if (!aviso.isAfter(ahora)) return null
+        return aviso.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
+    /**
      * Valida una hora elegida con el TimePicker NATIVO (fuera de la grilla
      * de 10 minutos). Devuelve el mensaje de error o null si es válida:
      * la hora debe caer dentro de la ventana de servicio (resolviendo si

@@ -9,6 +9,7 @@ import com.example.casajojoapp.data.repository.ClienteRepository
 import com.example.casajojoapp.data.repository.ClienteRepositoryImpl
 import com.example.casajojoapp.data.repository.PedidoRepositoryLocal
 import com.example.casajojoapp.util.Notificador
+import com.example.casajojoapp.util.RecordatoriosRetiro
 
 // =========================================================
 // Contenedor de dependencias (Service Locator, sin Hilt):
@@ -30,6 +31,9 @@ object ServicioLocator {
 
     // Recurso nativo: notificaciones locales de cambio de estado.
     val notificador: Notificador by lazy { Notificador(contexto) }
+
+    // Recurso nativo: recordatorio "5 min antes del retiro" (AlarmManager).
+    val recordatorios: RecordatoriosRetiro by lazy { RecordatoriosRetiro(contexto) }
 
     val authRepository: AuthRepository by lazy {
         AuthRepositoryLocal(baseDeDatos.usuarioDao(), contexto)

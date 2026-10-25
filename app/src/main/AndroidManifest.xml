@@ -7,6 +7,10 @@
     <!-- NOTIFICACIONES LOCALES (Android 13+): aviso de cambio de estado
          de comanda. Se pide en runtime desde MainActivity. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- RECORDATORIO 5 MIN ANTES DEL RETIRO: alarma exacta (con fallback
+         inexacto si el sistema la niega) + reprogramar tras reinicio. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".CasaJoJoApplication"
@@ -31,6 +35,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Recordatorio "faltan 5 minutos para tu retiro" (AlarmManager). -->
+        <receiver
+            android:name=".util.AvisoRetiroReceiver"
+            android:exported="false" />
+
+        <!-- Reprograma los recordatorios tras un reinicio del teléfono. -->
+        <receiver
+            android:name=".util.BootReceiver"
+            android:exported="false"
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

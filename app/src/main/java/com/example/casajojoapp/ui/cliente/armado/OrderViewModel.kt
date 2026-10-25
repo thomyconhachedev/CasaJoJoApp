@@ -314,6 +314,21 @@ class OrderViewModel : ViewModel() {
                     titulo = "Nueva comanda #${confirmado.id}",
                     texto = "Retiro a las ${confirmado.horaRetiro} · ${confirmado.clienteNombre}"
                 )
+                // RECORDATORIO LOCAL: aviso 5 minutos antes de la hora de
+                // retiro en ESTE dispositivo (AlarmManager, funciona con la
+                // app cerrada; se cancela al cancelar o listar el pedido).
+                val momentoAviso =
+                    com.example.casajojoapp.util.HorarioRetiro.momentoRecordatorio(
+                        confirmado.horaRetiro
+                    )
+                if (momentoAviso != null) {
+                    com.example.casajojoapp.data.ServicioLocator.recordatorios.programar(
+                        idPedido = confirmado.id,
+                        momento = momentoAviso,
+                        titulo = "Tu retiro es a las ${confirmado.horaRetiro}",
+                        texto = "Faltan 5 minutos para retirar tu pedido en La Casa JoJo."
+                    )
+                }
                 cargarPedidos() // refresca la cola de admin desde el repositorio
             } catch (e: CancellationException) {
                 throw e
@@ -355,6 +370,13 @@ class OrderViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 pedidoRepository().cambiarEstado(id, nuevoEstado)
+                // El aviso de "5 min antes" deja de tener sentido si el
+                // pedido se cancela o ya está listo para retiro.
+                if (nuevoEstado == EstadoPedido.CANCELADO ||
+                    nuevoEstado == EstadoPedido.LISTO_PARA_RETIRO
+                ) {
+                    com.example.casajojoapp.data.ServicioLocator.recordatorios.cancelar(id)
+                }
                 // NOTIFICACIÓN LOCAL: el cliente en este dispositivo ve el
                 // cambio de estado (p. ej. "Listo para retiro").
                 com.example.casajojoapp.data.ServicioLocator.notificador.notificar(

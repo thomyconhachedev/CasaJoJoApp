@@ -163,7 +163,8 @@ Requisitos: Android Studio Koala+, JDK 17+ (toolchain resuelta por Gradle), Andr
 1. **HTTPS:** la app hoy habla HTTP sobre red interna (Tailscale). Antes de exponerla se termina HTTPS en el backend y se elimina `usesCleartextTraffic`.
 2. **Autenticación real de API:** login JWT en el backend + `AuthApi` en el móvil (paso a paso en `docs/backend_login_paso_a_paso.md`). Mientras tanto, el gate admin es de UI, no de datos: los endpoints siguen abiertos en la red interna.
 3. **Idempotencia en `POST /pedidos`** para evitar duplicados ante timeouts.
-4. **Declaración de datos personales y política de privacidad** antes de publicar en Google Play.
+4. **Notificaciones push multi-dispositivo (FCM):** hoy los avisos ("5 min antes del retiro" y cambio de estado) son **locales del dispositivo**; el aviso al teléfono del cliente cuando *otro* equipo cambia el estado requiere FCM + integración en el backend.
+5. **Declaración de datos personales y política de privacidad** antes de publicar en Google Play.
 
 ---
 
