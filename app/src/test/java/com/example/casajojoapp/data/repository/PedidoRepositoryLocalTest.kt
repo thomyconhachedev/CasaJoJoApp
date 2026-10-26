@@ -7,6 +7,7 @@ import com.example.casajojoapp.domain.model.PlatoArmado
 import com.example.casajojoapp.domain.model.Producto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -89,5 +90,27 @@ class PedidoRepositoryLocalTest {
 
         assertEquals(1, runBlocking { repo.listarPedidos().size })
         assertTrue(runBlocking { repo.listarPedidos() }.none { it.id == 9L })
+    }
+
+    @Test
+    fun buscarPorCodigoEncuentraIgnorandoMayusculas() = runBlocking {
+        val repo = PedidoRepositoryLocal()
+        val creado = repo.crearPedido(pedido("Ana"))
+
+        assertEquals(creado.id, repo.buscarPorCodigo(creado.codigoSeguimiento!!)?.id)
+        // Case-insensitive: el usuario puede escribirlo en minúsculas.
+        assertEquals(creado.id, repo.buscarPorCodigo(creado.codigoSeguimiento!!.lowercase())?.id)
+        // Inexistente => null (la pantalla muestra "no encontrado").
+        assertNull(repo.buscarPorCodigo("CJ-NOEXISTE"))
+    }
+
+    @Test
+    fun buscarPorIdEncuentraSoloPedidosExistentes() = runBlocking {
+        val repo = PedidoRepositoryLocal()
+        val primero = repo.crearPedido(pedido("Uno"))
+        repo.crearPedido(pedido("Dos"))
+
+        assertEquals(primero.id, repo.buscarPorId(primero.id)?.id)
+        assertNull(repo.buscarPorId(999L))
     }
 }

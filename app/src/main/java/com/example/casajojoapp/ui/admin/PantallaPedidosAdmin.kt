@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.casajojoapp.domain.model.EstadoPedido
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
+import com.example.casajojoapp.ui.componentes.BuscadorPedidos
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.JoJoFondoApp
 import com.example.casajojoapp.ui.theme.JoJoRojoClaro
@@ -115,6 +116,17 @@ fun PantallaPedidosAdmin(
             filtroSeleccionado = estadoFiltro,
             onFiltrar = { nuevoFiltro -> filtro = nuevoFiltro?.name }
         )
+
+        // Buscador por código o #id: abre el detalle completo del pedido.
+        BuscadorPedidos(uiState = uiState, viewModel = viewModel)
+
+        // One-shot: al encontrar, limpiamos y navegamos (evita que "atrás"
+        // desde el detalle vuelva a disparar la navegación).
+        LaunchedEffect(uiState.pedidoEncontradoId) {
+            val id = uiState.pedidoEncontradoId ?: return@LaunchedEffect
+            viewModel.limpiarPedidoEncontrado()
+            navController.navigate("detallePedido/$id")
+        }
 
         uiState.errorMessage?.let { mensaje ->
             Text(text = mensaje, color = JoJoRojoClaro, fontSize = 13.sp)

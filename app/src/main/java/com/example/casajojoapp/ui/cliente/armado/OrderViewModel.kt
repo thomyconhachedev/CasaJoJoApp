@@ -380,6 +380,85 @@ class OrderViewModel : ViewModel() {
     }
 
     // =========================================================
+    // BUSCADOR DE PEDIDOS (admin y clientes):
+    // - "#id" numérico: en modo LOCAL o con rol ADMIN va al GET /pedidos/{id};
+    //   un cliente normal con un número se trata como código (el backend
+    //   responde 404 y mostramos "no encontrado").
+    // - Código (CJ-XXXX / JOJO-xxxx): GET /seguimiento/{codigo} en API y
+    //   búsqueda case-insensitive en la cola local.
+    // El resultado se inyecta en pedidosEnviados para que la pantalla de
+    // detalle pueda mostrarlo sin recargar.
+    // =========================================================
+    fun buscarPedido(consulta: String) {
+        val texto = consulta.trim()
+        if (texto.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                errorBusqueda = "Ingresa un código (CJ-XXXX) o el número del pedido."
+            )
+            return
+        }
+        val rol = authRepository.sesion.value.rol
+        val modoEsApi = modoDatosRepository.modo.value == ModoDatos.API
+        val idNumerico = texto.toLongOrNull()
+        val buscarPorId = idNumerico != null && (!modoEsApi || rol == Rol.ADMIN)
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                buscandoPedido = true,
+                errorBusqueda = null,
+                pedidoEncontradoId = null
+            )
+            try {
+                val pedido = if (buscarPorId) {
+                    pedidoRepository().buscarPorId(idNumerico!!)
+                } else {
+                    pedidoRepository().buscarPorCodigo(texto.uppercase())
+                }
+                if (pedido == null) {
+                    _uiState.value = _uiState.value.copy(
+                        buscandoPedido = false,
+                        errorBusqueda = "No encontramos pedidos con «$texto»."
+                    )
+                } else {
+                    val actuales = _uiState.value.pedidosEnviados
+                    val lista = if (actuales.any { it.id == pedido.id }) {
+                        actuales.map { if (it.id == pedido.id) pedido else it }
+                    } else {
+                        listOf(pedido) + actuales
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        buscandoPedido = false,
+                        pedidosEnviados = lista,
+                        pedidoEncontradoId = pedido.id,
+                        errorBusqueda = null
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: retrofit2.HttpException) {
+                _uiState.value = _uiState.value.copy(
+                    buscandoPedido = false,
+                    errorBusqueda = if (e.code() == 404) {
+                        "No encontramos pedidos con «$texto»."
+                    } else {
+                        ApiError.mensaje(e)
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    buscandoPedido = false,
+                    errorBusqueda = ApiError.mensaje(e)
+                )
+            }
+        }
+    }
+
+    // One-shot: la pantalla llama esto justo antes de navegar al detalle.
+    fun limpiarPedidoEncontrado() {
+        _uiState.value = _uiState.value.copy(pedidoEncontradoId = null)
+    }
+
+    // =========================================================
     // ADMIN / CARGA DE COLA: en modo API cada rol pide lo que el backend
     // le permite — ADMIN la cola completa, USUARIO solo SUS pedidos
     // (GET /pedidos/mios) e INVITADO solo historial local. Así un usuario

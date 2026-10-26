@@ -35,6 +35,7 @@ import com.example.casajojoapp.domain.model.EstadoPedido
 import com.example.casajojoapp.domain.model.Pedido
 import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.cliente.armado.OrderViewModel
+import com.example.casajojoapp.ui.componentes.BuscadorPedidos
 import com.example.casajojoapp.ui.componentes.HeaderPrincipal
 import com.example.casajojoapp.ui.theme.*
 import kotlinx.coroutines.delay
@@ -89,6 +90,20 @@ fun PantallaMisPedidos(
                 color = JoJoTextoSecundario,
                 fontSize = 14.sp
             )
+        }
+
+        // Buscador por código: también para invitados (el endpoint de
+        // seguimiento es público — con su código consultan sin cuenta).
+        BuscadorPedidos(
+            uiState = uiState,
+            viewModel = viewModel,
+            pista = "Tu código (CJ-XXXX o JOJO-xxxx)"
+        )
+
+        LaunchedEffect(uiState.pedidoEncontradoId) {
+            val id = uiState.pedidoEncontradoId ?: return@LaunchedEffect
+            viewModel.limpiarPedidoEncontrado()
+            navController.navigate("detallePedido/$id")
         }
 
         when {

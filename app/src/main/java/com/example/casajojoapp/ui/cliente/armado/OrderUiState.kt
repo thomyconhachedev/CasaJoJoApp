@@ -45,6 +45,12 @@ data class OrderUiState(
     // Último pedido confirmado por el repositorio (trae id y código de
     // seguimiento del backend en modo API). Se limpia al armar otro plato.
     val pedidoConfirmado: Pedido? = null,
+    // BUSCADOR (admin y clientes): consulta por código o #id.
+    val buscandoPedido: Boolean = false,
+    val errorBusqueda: String? = null,
+    // Id del pedido encontrado; la pantalla navega al detalle y lo limpia
+    // (one-shot: evita que "atrás" desde el detalle re-dispare la navegación).
+    val pedidoEncontradoId: Long? = null,
     val errorMessage: String? = null
 ) {
     // CAMBIO MVVM (sección 1.B): costo total acumulado del carrito

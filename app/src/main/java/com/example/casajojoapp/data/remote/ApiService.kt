@@ -40,6 +40,15 @@ interface ApiService {
     @GET("api/v1/pedidos/mios")
     suspend fun listarMisPedidos(): List<PedidoResponseDto>
 
+    // Buscador por código de seguimiento (endpoint público: también lo
+    // usan invitados desde "Mis Pedidos").
+    @GET("api/v1/pedidos/seguimiento/{codigo}")
+    suspend fun buscarPorCodigo(@Path("codigo") codigo: String): PedidoResponseDto
+
+    // Búsqueda por id numérico (solo rol ADMIN en modo API).
+    @GET("api/v1/pedidos/{id}")
+    suspend fun buscarPorId(@Path("id") id: Long): PedidoResponseDto
+
     @PATCH("api/v1/pedidos/{id}/estado")
     suspend fun cambiarEstadoPedido(
         @Path("id") id: Long,

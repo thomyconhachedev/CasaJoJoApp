@@ -152,6 +152,20 @@ Body: `{"estado": "EN_PREPARACION"}` (valores del enum de la sección 4).
 La app **solo ofrece avanzar de a un estado** (la cola admin no permite
 saltos porque el backend los rechaza con 409).
 
+### 3.7 `GET /api/v1/pedidos/seguimiento/{codigo}` — consulta pública por código
+
+**200 OK** → `PedidoResponseDto` completo (estado, `montoTotal`, detalles
+con `platoId`). **Público (sin token)**: es la puerta de consulta de los
+**invitados** — con el código que reciben al confirmar (CJ-XXXX) ven el
+estado desde "Mis Pedidos" sin cuenta.
+**404** → `{"error": "..."}` si el código no existe (la app muestra
+"No encontramos pedidos con «...»").
+
+### 3.8 `GET /api/v1/pedidos/{id}` — pedido por número (admin)
+
+**200 OK** → `PedidoResponseDto`. Solo ADMIN. La app la usa cuando la
+búsqueda recibe un número en vez de un código (y en modo LOCAL).
+
 ## 4. Máquina de estados del pedido
 
 ```

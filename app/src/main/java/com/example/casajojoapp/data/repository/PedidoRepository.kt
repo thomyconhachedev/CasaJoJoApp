@@ -22,6 +22,12 @@ interface PedidoRepository {
     /** Pedidos de la propia cuenta (modo API con sesión; vacío en local). */
     suspend fun listarMisPedidos(): List<Pedido>
 
+    /** Busca por código de seguimiento (JOJO-xxxx / CJ-XXXX); null si no existe. */
+    suspend fun buscarPorCodigo(codigo: String): Pedido?
+
+    /** Busca por id numérico; null si no existe. */
+    suspend fun buscarPorId(id: Long): Pedido?
+
     suspend fun crearPedido(pedido: Pedido): Pedido
     suspend fun cambiarEstado(id: Long, nuevoEstado: EstadoPedido)
 }
@@ -43,6 +49,13 @@ class PedidoRepositoryLocal : PedidoRepository {
     // En local "los míos" se resuelven contra el historial de Room (ver
     // OrderViewModel), no contra la cola en memoria.
     override suspend fun listarMisPedidos(): List<Pedido> = emptyList()
+
+    // Buscador local: sobre la cola en memoria (restaurada desde Room al arrancar).
+    override suspend fun buscarPorCodigo(codigo: String): Pedido? =
+        pedidos.firstOrNull { it.codigoSeguimiento.equals(codigo, ignoreCase = true) }
+
+    override suspend fun buscarPorId(id: Long): Pedido? =
+        pedidos.firstOrNull { it.id == id }
 
     override suspend fun crearPedido(pedido: Pedido): Pedido {
         val nuevoId = secuenciaId.incrementAndGet()
@@ -86,6 +99,12 @@ class PedidoRepositoryApi(private val api: ApiService) : PedidoRepository {
     /** Pedidos de la propia cuenta con token (GET /pedidos/mios). */
     override suspend fun listarMisPedidos(): List<Pedido> =
         api.listarMisPedidos().map { it.aDominio() }
+
+    override suspend fun buscarPorCodigo(codigo: String): Pedido? =
+        api.buscarPorCodigo(codigo).aDominio()
+
+    override suspend fun buscarPorId(id: Long): Pedido? =
+        api.buscarPorId(id).aDominio()
 
     override suspend fun crearPedido(pedido: Pedido): Pedido =
         api.crearPedido(pedido.aRequestDto()).aDominio()
