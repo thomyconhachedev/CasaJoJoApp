@@ -108,6 +108,7 @@ Body (`CrearPedidoRequestDto`):
 ### 3.4 `GET /api/v1/pedidos` — cola (admin)
 
 **200 OK** → `PedidoResponseDto[]`. La app ordena por hora de retiro.
+Solo con sesión **ADMIN** (otros roles reciben 401/403).
 
 ```json
 {
@@ -130,8 +131,20 @@ Body (`CrearPedidoRequestDto`):
 - `detalles[].platoId`: echo del plato enviado en el POST (1..N). Permite a
   la app mostrar "PLATO 1 DE 2" con la ficha de cada combinación. Campo
   nullable: si no viene, la vista de detalle degrada a líneas planas.
+- `montoTotal`: **base del plato × número de platos + solo los extras**
+  (postres/bebidas), calculado por el servidor con
+  `negocio.precio-plato-base` (4800); los precios de los items base del
+  Sheet **no** suman, igual que el total que muestra la app antes de
+  enviar. Los pedidos antiguos sin `platoId` conservan su suma histórica.
 
-### 3.5 `PATCH /api/v1/pedidos/{id}/estado` — avanzar estado
+### 3.5 `GET /api/v1/pedidos/mios` — pedidos de la cuenta
+
+**200 OK** → `PedidoResponseDto[]` con los pedidos **de quien hace la
+petición**. Requiere `Authorization` con token (el interceptor de la app
+lo adjunta solo con sesión iniciada). La pantalla "Mis pedidos" de un
+usuario normal usa este endpoint en vez de la cola completa de admin.
+
+### 3.6 `PATCH /api/v1/pedidos/{id}/estado` — avanzar estado
 
 Body: `{"estado": "EN_PREPARACION"}` (valores del enum de la sección 4).
 

@@ -380,16 +380,26 @@ class OrderViewModel : ViewModel() {
     }
 
     // =========================================================
-    // ADMIN: carga la cola desde el repositorio vigente (LOCAL o API).
-    // En modo API con el backend caído se DEGRADA a la cola local y lo
-    // avisa, para que el panel nunca quede mudo en una demo.
+    // ADMIN / CARGA DE COLA: en modo API cada rol pide lo que el backend
+    // le permite — ADMIN la cola completa, USUARIO solo SUS pedidos
+    // (GET /pedidos/mios) e INVITADO solo historial local. Así un usuario
+    // normal nunca recibe el 403 de la cola de admin (que antes se mostraba
+    // en el carrito como si no pudiera confirmar su pedido).
     // =========================================================
     fun cargarPedidos() {
         viewModelScope.launch {
+            val modoEsApi = modoDatosRepository.modo.value == ModoDatos.API
+            val rol = authRepository.sesion.value.rol
             try {
-                val lista = pedidoRepository().listarPedidos()
-                // CAMBIO HISTORIAL: cola vacía (p. ej. reinicio en modo LOCAL
-                // o cliente sin pedidos del día) => se sirve desde Room.
+                val lista = if (!modoEsApi) {
+                    pedidoRepositoryLocal.listarPedidos()
+                } else when (rol) {
+                    Rol.ADMIN -> PedidoRepositoryApi(apiServiceVigente()).listarPedidosAdmin()
+                    Rol.USUARIO -> PedidoRepositoryApi(apiServiceVigente()).listarMisPedidos()
+                    Rol.INVITADO -> emptyList()
+                }
+                // Cola vacía (p. ej. reinicio en modo LOCAL o invitado):
+                // se sirve desde el historial de Room.
                 val efectiva = if (lista.isEmpty()) historialLocal() else lista
                 _uiState.value = _uiState.value.copy(
                     pedidosEnviados = efectiva,
@@ -399,11 +409,15 @@ class OrderViewModel : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 // Backend inaccesible: memoria local y, si está vacía, Room.
+                // El mensaje solo interesa al ADMIN (es su cola); los demás
+                // reciben el respaldo local en silencio.
                 val respaldo = pedidoRepositoryLocal.listarPedidos()
                     .ifEmpty { historialLocal() }
                 _uiState.value = _uiState.value.copy(
                     pedidosEnviados = respaldo,
-                    errorMessage = "Backend no disponible: ${ApiError.mensaje(e)}"
+                    errorMessage = if (rol == Rol.ADMIN) {
+                        "Backend no disponible: ${ApiError.mensaje(e)}"
+                    } else null
                 )
             }
         }

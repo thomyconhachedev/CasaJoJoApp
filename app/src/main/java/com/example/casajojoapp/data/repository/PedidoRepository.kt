@@ -15,6 +15,13 @@ import com.example.casajojoapp.domain.model.Pedido
 // =========================================================
 interface PedidoRepository {
     suspend fun listarPedidos(): List<Pedido>
+
+    /** Pedidos completos de cocina (solo ADMIN en modo API). */
+    suspend fun listarPedidosAdmin(): List<Pedido>
+
+    /** Pedidos de la propia cuenta (modo API con sesión; vacío en local). */
+    suspend fun listarMisPedidos(): List<Pedido>
+
     suspend fun crearPedido(pedido: Pedido): Pedido
     suspend fun cambiarEstado(id: Long, nuevoEstado: EstadoPedido)
 }
@@ -29,6 +36,13 @@ class PedidoRepositoryLocal : PedidoRepository {
     private val secuenciaId = java.util.concurrent.atomic.AtomicLong(0)
 
     override suspend fun listarPedidos(): List<Pedido> = pedidos.toList()
+
+    // En local no hay distinción de roles: la cola es la misma.
+    override suspend fun listarPedidosAdmin(): List<Pedido> = listarPedidos()
+
+    // En local "los míos" se resuelven contra el historial de Room (ver
+    // OrderViewModel), no contra la cola en memoria.
+    override suspend fun listarMisPedidos(): List<Pedido> = emptyList()
 
     override suspend fun crearPedido(pedido: Pedido): Pedido {
         val nuevoId = secuenciaId.incrementAndGet()
@@ -65,6 +79,13 @@ class PedidoRepositoryApi(private val api: ApiService) : PedidoRepository {
 
     override suspend fun listarPedidos(): List<Pedido> =
         api.listarPedidos().map { it.aDominio() }
+
+    /** Cola completa de cocina: solo con sesión ADMIN (si no, el backend responde 403). */
+    override suspend fun listarPedidosAdmin(): List<Pedido> = listarPedidos()
+
+    /** Pedidos de la propia cuenta con token (GET /pedidos/mios). */
+    override suspend fun listarMisPedidos(): List<Pedido> =
+        api.listarMisPedidos().map { it.aDominio() }
 
     override suspend fun crearPedido(pedido: Pedido): Pedido =
         api.crearPedido(pedido.aRequestDto()).aDominio()

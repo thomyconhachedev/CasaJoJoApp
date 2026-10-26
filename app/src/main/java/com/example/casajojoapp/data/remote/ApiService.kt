@@ -35,6 +35,11 @@ interface ApiService {
     @GET("api/v1/pedidos")
     suspend fun listarPedidos(): List<PedidoResponseDto>
 
+    // Pedidos de la cuenta autenticada (usuario normal; el token lo adjunta
+    // AuthInterceptor). La cola completa de arriba es solo para admin.
+    @GET("api/v1/pedidos/mios")
+    suspend fun listarMisPedidos(): List<PedidoResponseDto>
+
     @PATCH("api/v1/pedidos/{id}/estado")
     suspend fun cambiarEstadoPedido(
         @Path("id") id: Long,
