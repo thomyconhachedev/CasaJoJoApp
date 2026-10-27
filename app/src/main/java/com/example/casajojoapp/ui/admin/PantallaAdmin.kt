@@ -582,8 +582,10 @@ private fun EstadoMenu(
     }
 }
 
-// Color de cada estado para el badge/menú (paleta semántica del tema)
-private fun colorDeEstado(estado: EstadoPedido): Color = when (estado) {
+// Color de cada estado para el badge/menú (paleta semántica del tema).
+// Es público (sin `private`) porque PantallaCocina.kt lo reusa en las
+// tarjetas de cocina; vive aquí para no duplicar la tabla de colores.
+fun colorDeEstado(estado: EstadoPedido): Color = when (estado) {
     EstadoPedido.RECIBIDO -> EstadoRecibido
     EstadoPedido.EN_PREPARACION -> EstadoEnPreparacion
     EstadoPedido.LISTO_PARA_RETIRO -> EstadoListo

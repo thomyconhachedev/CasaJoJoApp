@@ -138,9 +138,17 @@ Requisitos: Android Studio Koala+, JDK 17+ (toolchain resuelta por Gradle), Andr
 
 ### Panel de cocina (admin)
 
-- Cola ordenada por hora de retiro con máquina de estados
+- **Vista Cocina** (primer botón de la barra inferior del admin): pantalla de
+  trabajo con dos pestañas — **Recibidos** y **En preparación** — ordenadas por
+  hora de entrega. Cada tarjeta muestra el contenido del pedido (proteína,
+  acompañamientos, ensalada, extras y notas por plato) con botones directos de
+  estado: "Iniciar preparación" y "Marcar listo para retiro" (el pedido pasa a
+  la cola completa al quedar listo).
+- **Cola** (botón del medio): cola completa ordenada por hora de retiro con
+  máquina de estados
   (`RECIBIDO → EN_PREPARACION → LISTO_PARA_RETIRO → ENTREGADO`, cancelar desde estados iniciales).
-- Interruptor **LOCAL/API** + URL del backend (validada `http/https`).
+- Interruptor **LOCAL/API** + URL del backend (validada `http/https`) desde
+  "Panel de datos" en Cocina o el panel de administración.
 - **"Refrescar menú" = `POST /sincronizar` + `GET /menu`**: el cliente
   actualiza su menú (Google Sheet → BD) desde la app, sin Postman.
 - **Degración elegante:** si el backend está caído, menú y cola se sirven
