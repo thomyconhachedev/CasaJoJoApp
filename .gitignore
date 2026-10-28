@@ -21,3 +21,6 @@ local.properties
 /docs/Ev. Parcial 2_Estudiante_Encargo_DSY1105.pdf
 /docs/veHJFYsX - casajojoapp.json
 /docs/guion_video_casajojo.docx
+
+# Config local del IDE (no se publica)
+/.idea/
