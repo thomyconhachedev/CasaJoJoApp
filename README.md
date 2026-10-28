@@ -168,7 +168,7 @@ La app integra tres recursos nativos, con su permiso y configuración correspond
 
 **Decidido conscientemente para la MVP (roadmap):**
 
-1. **HTTPS:** la app hoy habla HTTP sobre red interna (Tailscale). Antes de exponerla se termina HTTPS en el backend y se elimina `usesCleartextTraffic`.
+1. **HTTPS:** la app hoy habla HTTP sobre una IP pública sin cifrar. Antes de exponerla se termina HTTPS en el backend y se elimina `usesCleartextTraffic`.
 2. **Autenticación real de API:** login JWT en el backend + `AuthApi` en el móvil (paso a paso en `docs/backend_login_paso_a_paso.md`). Mientras tanto, el gate admin es de UI, no de datos: los endpoints siguen abiertos en la red interna.
 3. **Idempotencia en `POST /pedidos`** para evitar duplicados ante timeouts.
 4. **Notificaciones push multi-dispositivo (FCM):** hoy los avisos ("5 min antes del retiro" y cambio de estado) son **locales del dispositivo**; el aviso al teléfono del cliente cuando *otro* equipo cambia el estado requiere FCM + integración en el backend.

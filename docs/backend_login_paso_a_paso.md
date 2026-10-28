@@ -259,21 +259,21 @@ La app ya tiene la puerta preparada:
 
 ```powershell
 # Registro de un cliente
-curl -X POST http://100.62.186.171:8080/api/v1/auth/registro `
+curl -X POST http://52.45.64.249:8080/api/v1/auth/registro `
   -H "Content-Type: application/json" `
   -d '{"username":"ana","password":"secreto123","nombre":"Ana Pérez","telefono":"+56912345678"}'
 
 # Login (devuelve el token)
-curl -X POST http://100.62.186.171:8080/api/v1/auth/login `
+curl -X POST http://52.45.64.249:8080/api/v1/auth/login `
   -H "Content-Type: application/json" `
   -d '{"username":"admin","password":"casajojo2026"}'
 
 # Cola (solo ADMIN) — debe dar 401 sin token y 200 con él
-curl http://100.62.186.171:8080/api/v1/pedidos
-curl http://100.62.186.171:8080/api/v1/pedidos -H "Authorization: Bearer <TOKEN>"
+curl http://52.45.64.249:8080/api/v1/pedidos
+curl http://52.45.64.249:8080/api/v1/pedidos -H "Authorization: Bearer <TOKEN>"
 
 # Pedido de invitado (sin token): debe crear OK con usuario_id NULL
-curl -X POST http://100.62.186.171:8080/api/v1/pedidos `
+curl -X POST http://52.45.64.249:8080/api/v1/pedidos `
   -H "Content-Type: application/json" `
   -d '{"nombreCliente":"Invitado Test","horaRetiroSolicitada":"14:00","items":[{"itemMenuId":1,"cantidad":1}]}'
 ```

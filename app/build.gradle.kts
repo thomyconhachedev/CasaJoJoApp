@@ -21,7 +21,7 @@ android {
         // En modo API se puede sobreescribir en runtime desde el panel Admin.
         // Para probar en emulador, cambiar a "http://10.0.2.2:8080/".
         // Debe terminar en "/".
-        buildConfigField("String", "BASE_URL", "\"http://100.62.186.171:8080/\"")
+        buildConfigField("String", "BASE_URL", "\"http://52.45.64.249:8080/\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

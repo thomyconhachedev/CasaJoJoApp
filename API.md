@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| Base URL (producción/pruebas) | `http://100.62.186.171:8080/` (IP interna Tailscale) |
+| Base URL (producción/pruebas) | `http://52.45.64.249:8080/` (IP pública del servidor) |
 | Base URL (emulador) | `http://10.0.2.2:8080/` |
 | Prefijo | `/api/v1` |
 | Content-Type | `application/json` |
@@ -182,12 +182,12 @@ Antes de cada entrega, correr (15 min) y actualizar este archivo si algo
 no cuadra:
 
 ```powershell
-curl http://100.62.186.171:8080/api/v1/menu
-curl -X POST http://100.62.186.171:8080/api/v1/menu/sincronizar
-curl -X POST http://100.62.186.171:8080/api/v1/pedidos -H "Content-Type: application/json" `
+curl http://52.45.64.249:8080/api/v1/menu
+curl -X POST http://52.45.64.249:8080/api/v1/menu/sincronizar
+curl -X POST http://52.45.64.249:8080/api/v1/pedidos -H "Content-Type: application/json" `
   -d '{"nombreCliente":"Test","horaRetiroSolicitada":"14:00","items":[{"itemMenuId":1,"cantidad":1}]}'
-curl http://100.62.186.171:8080/api/v1/pedidos
-curl -X PATCH http://100.62.186.171:8080/api/v1/pedidos/1/estado -H "Content-Type: application/json" `
+curl http://52.45.64.249:8080/api/v1/pedidos
+curl -X PATCH http://52.45.64.249:8080/api/v1/pedidos/1/estado -H "Content-Type: application/json" `
   -d '{"estado":"EN_PREPARACION"}'
 ```
 
