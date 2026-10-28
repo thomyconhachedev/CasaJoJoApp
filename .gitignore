@@ -24,3 +24,6 @@ local.properties
 
 # Config local del IDE (no se publica)
 /.idea/
+
+# IDE (cualquier carpeta)
+**/.idea/

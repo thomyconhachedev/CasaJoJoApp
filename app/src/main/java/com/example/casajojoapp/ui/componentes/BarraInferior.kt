@@ -35,16 +35,21 @@ import com.example.casajojoapp.ui.theme.JoJoTextoSecundario
 
 // =========================================================
 // BARRA INFERIOR ESTÁTICA (3 botones cuadrados) en las pantallas de
-// nivel superior: Inicio · Pedidos · Perfil.
-// - El botón "Pedidos" adapta su etiqueta y destino al rol:
-//   ADMIN -> "Cola" (vista filtrable de pedidos), USUARIO -> "Mis pedidos",
+// nivel superior.
+// - El primer botón adapta su etiqueta y destino al rol: ADMIN -> "Cocina"
+//   (vista de trabajo con los pedidos a preparar), USUARIO/INVITADO ->
+//   "Inicio" (home).
+// - El botón del medio adapta su etiqueta y destino al rol:
+//   ADMIN -> "Cola" (cola completa de pedidos), USUARIO -> "Mis pedidos",
 //   INVITADO -> "Pedidos" (pide iniciar sesión).
 // Se renderiza como bottomBar del Scaffold de MainActivity solo en las
-// rutas top-level (home/pedidos/cuenta); el flujo de armado no la muestra.
+// rutas top-level (home/cocina/pedidos/cuenta); el flujo de armado no la
+// muestra.
 // =========================================================
 @Composable
 fun BarraInferior(navController: NavController, rutaActual: String?) {
     val sesion by ServicioLocator.authRepository.sesion.collectAsState()
+    val esAdmin = sesion.rol == Rol.ADMIN
 
     val etiquetaPedidos = when (sesion.rol) {
         Rol.ADMIN -> "Cola"
@@ -72,12 +77,21 @@ fun BarraInferior(navController: NavController, rutaActual: String?) {
                 .padding(vertical = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            ItemBarraInferior(
-                icono = R.drawable.ic_home,
-                etiqueta = "Inicio",
-                seleccionado = rutaActual == "home",
-                onClic = { irA("home") }
-            )
+            if (esAdmin) {
+                ItemBarraInferior(
+                    icono = R.drawable.ic_cocina,
+                    etiqueta = "Cocina",
+                    seleccionado = rutaActual == "cocina",
+                    onClic = { irA("cocina") }
+                )
+            } else {
+                ItemBarraInferior(
+                    icono = R.drawable.ic_home,
+                    etiqueta = "Inicio",
+                    seleccionado = rutaActual == "home",
+                    onClic = { irA("home") }
+                )
+            }
             ItemBarraInferior(
                 icono = R.drawable.ic_pedidos,
                 etiqueta = etiquetaPedidos,

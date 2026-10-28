@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.example.casajojoapp.domain.model.Rol
 import com.example.casajojoapp.ui.admin.AccesoRestringidoAdmin
 import com.example.casajojoapp.ui.admin.PantallaAdmin
+import com.example.casajojoapp.ui.admin.PantallaCocina
 import com.example.casajojoapp.ui.admin.PantallaDetallePedido
 import com.example.casajojoapp.ui.admin.PantallaPedidosAdmin
 import com.example.casajojoapp.ui.auth.PantallaLogin
@@ -214,6 +215,21 @@ class MainActivity : ComponentActivity() {
                             val sesion by orderViewModel.sesion.collectAsState()
                             if (sesion.rol == Rol.ADMIN) {
                                 PantallaAdmin(
+                                    navController = navController,
+                                    viewModel = orderViewModel
+                                )
+                            } else {
+                                AccesoRestringidoAdmin(navController = navController)
+                            }
+                        }
+                        // VISTA DE COCINA (barra inferior del admin, primer
+                        // botón): pedidos a preparar con pestañas Recibidos /
+                        // En preparación y acciones rápidas de estado. SOLO
+                        // para sesión ADMIN; sin ella se muestra el gate.
+                        composable("cocina") {
+                            val sesion by orderViewModel.sesion.collectAsState()
+                            if (sesion.rol == Rol.ADMIN) {
+                                PantallaCocina(
                                     navController = navController,
                                     viewModel = orderViewModel
                                 )
